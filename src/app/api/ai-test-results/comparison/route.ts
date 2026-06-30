@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { Exam } from '@/lib/models/Exam';
 import { ExamResult } from '@/lib/models/ExamResult';
+import { User } from '@/lib/models/User';
 
 // GET — returns per-student comparison: first AI test result vs most recent AI test result
 // This covers ALL scheduled AI exams regardless of teacher.
@@ -36,6 +37,12 @@ export async function GET(_request: NextRequest) {
       byUser.get(uid)!.push(r);
     }
 
+    // Fetch roll numbers for all users in one query
+    const userIds = Array.from(byUser.keys());
+    const users = await User.find({ _id: { $in: userIds } }).select('_id rollNumber').lean() as any[];
+    const rollMap = new Map<string, string>();
+    for (const u of users) rollMap.set(u._id.toString(), u.rollNumber || '');
+
     // Build comparison rows
     const rows: any[] = [];
     for (const [userId, userResults] of byUser) {
@@ -53,7 +60,8 @@ export async function GET(_request: NextRequest) {
 
       rows.push({
         userId,
-        userName: first.userName,
+        userName:   first.userName,
+        rollNumber: rollMap.get(userId) || '',
         totalAttempts: userResults.length,
         first: {
           examId:     first.courseId,

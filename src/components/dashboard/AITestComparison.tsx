@@ -22,6 +22,7 @@ interface TestSnap {
 interface ComparisonRow {
   userId: string;
   userName: string;
+  rollNumber: string;
   totalAttempts: number;
   first: TestSnap;
   latest: TestSnap | null;
@@ -154,6 +155,9 @@ export function AITestComparison() {
                     {/* Student name */}
                     <td className="py-3 px-3">
                       <p className="font-semibold text-slate-900">{row.userName}</p>
+                      {row.rollNumber && (
+                        <p className="text-[11px] text-slate-400 font-mono mt-0.5">{row.rollNumber}</p>
+                      )}
                     </td>
 
                     {/* First test */}
