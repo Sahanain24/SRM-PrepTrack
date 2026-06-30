@@ -14,10 +14,11 @@ export type {
   TeacherFeedback 
 } from './db';
 
-export { 
-  getDb, 
-  saveDb, 
-  getCurrentUser, 
+export {
+  getDb,
+  saveDb,
+  getCurrentUser,
   setCurrentUser,
+  db,
   db as database
 } from './db';
