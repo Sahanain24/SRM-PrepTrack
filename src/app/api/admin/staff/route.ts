@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { User } from '@/lib/models/User';
 
-const STAFF_ROLES = ['teacher', 'hod', 'dean', 'deputy_dean', 'pro_vc', 'admin'];
+const STAFF_ROLES    = ['teacher', 'hod', 'dean', 'deputy_dean', 'pro_vc', 'admin'];
+const FSH_ROLES      = ['hod', 'dean', 'deputy_dean', 'pro_vc', 'admin'];
+const EMAIL_RE       = /^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i;
+
+function withFSH(name: string) {
+  const trimmed = name.trim();
+  return /\bFSH\b/i.test(trimmed) ? trimmed : `${trimmed} FSH`;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,6 +40,12 @@ export async function POST(request: NextRequest) {
     }
 
     const email = body.email.trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) {
+      return NextResponse.json({ error: 'Email must be a valid @srmist.edu.in address' }, { status: 400 });
+    }
+
+    const name = FSH_ROLES.includes(body.role) ? withFSH(body.name) : body.name.trim();
+
     const existing = await User.findOne({ email });
     if (existing) {
       return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
@@ -40,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     const defaultPassword = email.split('@')[0];
     const staff = await User.create({
-      name:       body.name.trim(),
+      name,
       email,
       password:   defaultPassword,
       role:       body.role,

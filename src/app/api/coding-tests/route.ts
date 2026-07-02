@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       teacherId, teacherName, title, description,
-      examDate, startTime, durationMins,
+      examDate, startTime, deadlineDate, deadlineTime, durationMins,
       targetPrograms, targetYears, targetSections, problems,
     } = body;
 
@@ -85,8 +85,10 @@ export async function POST(request: NextRequest) {
     const test = await CodingTest.create({
       teacherId, teacherName,
       title, description: description || '',
-      examDate:  examDate  || '',
-      startTime: startTime || '',
+      examDate:     examDate     || '',
+      startTime:    startTime    || '',
+      deadlineDate: deadlineDate || '',
+      deadlineTime: deadlineTime || '',
       durationMins: Number(durationMins),
       targetPrograms: targetPrograms || [],
       targetYears:    targetYears    || [],

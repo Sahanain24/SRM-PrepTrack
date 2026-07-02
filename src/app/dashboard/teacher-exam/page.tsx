@@ -46,7 +46,7 @@ interface LeaderboardEntry {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  try { return new Intl.DateTimeFormat('en-GB').format(new Date(iso)); } catch { return '—'; }
 }
 
 export default function TeacherExamPage() {

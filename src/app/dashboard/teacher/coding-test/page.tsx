@@ -53,8 +53,10 @@ export default function TeacherCodingTestPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [examDate, setExamDate] = useState('');
-  const [startTime, setStartTime] = useState('');
+  const [examDate,     setExamDate]     = useState('');
+  const [startTime,    setStartTime]    = useState('');
+  const [deadlineDate, setDeadlineDate] = useState('');
+  const [deadlineTime, setDeadlineTime] = useState('23:59');
   const [durationMins, setDurationMins] = useState(60);
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
@@ -156,7 +158,7 @@ export default function TeacherCodingTestPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           teacherId, teacherName, title: title.trim(), description: description.trim(),
-          examDate, startTime, durationMins,
+          examDate, startTime, deadlineDate, deadlineTime, durationMins,
           targetPrograms: selectedPrograms, targetYears: selectedYears, targetSections: selectedSections,
           problems,
         }),
@@ -201,9 +203,9 @@ export default function TeacherCodingTestPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label>Date</Label>
+                <Label>Start Date</Label>
                 <Input type="date" value={examDate} onChange={e => setExamDate(e.target.value)} className="rounded-xl" />
               </div>
               <div className="space-y-1.5">
@@ -213,6 +215,14 @@ export default function TeacherCodingTestPage() {
               <div className="space-y-1.5">
                 <Label>Duration (mins)</Label>
                 <Input type="number" min={10} value={durationMins} onChange={e => setDurationMins(Number(e.target.value))} className="rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-red-700">Deadline Date</Label>
+                <Input type="date" value={deadlineDate} onChange={e => setDeadlineDate(e.target.value)} className="rounded-xl border-red-200" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-red-700">Deadline Time</Label>
+                <Input type="time" value={deadlineTime} onChange={e => setDeadlineTime(e.target.value)} className="rounded-xl border-red-200" />
               </div>
             </div>
 

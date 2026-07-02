@@ -107,7 +107,7 @@ export default function StudyHistoryPage() {
                       <TableRow key={q._id || q.id}>
                         <TableCell className="font-medium">{q.subject}</TableCell>
                         <TableCell>{q.score} / {q.total}</TableCell>
-                        <TableCell>{format(new Date(q.date), 'PPp')}</TableCell>
+                        <TableCell>{format(new Date(q.date), 'dd/MM/yyyy HH:mm')}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" onClick={() => openDetail(q, 'quiz')}>
                             <Eye className="h-4 w-4 mr-2" />
@@ -154,7 +154,7 @@ export default function StudyHistoryPage() {
                             <span className="capitalize">{c.result}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{format(new Date(c.date), 'PPp')}</TableCell>
+                        <TableCell>{format(new Date(c.date), 'dd/MM/yyyy HH:mm')}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" onClick={() => openDetail(c, 'coding')}>
                             <Code className="h-4 w-4 mr-2" />
@@ -186,7 +186,7 @@ export default function StudyHistoryPage() {
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
                           <Badge variant={m.sentiment === 'positive' ? 'default' : 'secondary'}>{m.sentiment.toUpperCase()}</Badge>
-                          <span className="text-xs text-muted-foreground">{format(new Date(m.date), 'PPp')}</span>
+                          <span className="text-xs text-muted-foreground">{format(new Date(m.date), 'dd/MM/yyyy HH:mm')}</span>
                         </div>
                         <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
                           View Analysis
@@ -214,7 +214,7 @@ export default function StudyHistoryPage() {
                 </div>
                 <DialogTitle className="text-2xl font-headline">{selectedItem.subject}</DialogTitle>
                 <DialogDescription>
-                  Taken on {format(new Date(selectedItem.date), 'PPPP p')}
+                  Taken on {format(new Date(selectedItem.date), 'dd/MM/yyyy HH:mm')}
                 </DialogDescription>
               </DialogHeader>
               <div className="py-6 flex flex-col items-center justify-center space-y-4">
@@ -256,7 +256,7 @@ export default function StudyHistoryPage() {
                 <DialogTitle className="text-2xl font-headline">{selectedItem.problemId}</DialogTitle>
                 <DialogDescription className="flex items-center gap-2">
                   <Calendar className="h-3 w-3" />
-                  Submitted on {format(new Date(selectedItem.date), 'PPp')}
+                  Submitted on {format(new Date(selectedItem.date), 'dd/MM/yyyy HH:mm')}
                 </DialogDescription>
               </DialogHeader>
               <div className="mt-4">
@@ -281,7 +281,7 @@ export default function StudyHistoryPage() {
                 </div>
                 <DialogTitle className="text-2xl font-headline">Speech Analysis Report</DialogTitle>
                 <DialogDescription>
-                  Session recorded on {format(new Date(selectedItem.date), 'PPp')}
+                  Session recorded on {format(new Date(selectedItem.date), 'dd/MM/yyyy HH:mm')}
                 </DialogDescription>
               </DialogHeader>
               <div className="mt-4 space-y-6">

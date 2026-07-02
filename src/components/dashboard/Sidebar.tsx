@@ -116,9 +116,12 @@ function NavContent({
           <div className="p-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white group-hover:shadow-lg transition-all">
             <GraduationCap className="h-6 w-6" />
           </div>
-          <span className="font-headline font-bold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            SRM Study Buddy
-          </span>
+          <div>
+            <span className="font-headline font-bold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent block">
+              SRM PrepTrack
+            </span>
+            <span className="text-[10px] text-slate-400 leading-tight block">Track your Prep. Crack your Placement.</span>
+          </div>
         </Link>
       </div>
 
@@ -217,7 +220,7 @@ export function Sidebar({ user }: { user: User }) {
               <GraduationCap className="h-5 w-5" />
             </div>
             <span className="font-headline font-bold text-base bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              SRM Study Buddy
+              SRM PrepTrack
             </span>
           </Link>
           <Button

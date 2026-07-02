@@ -175,7 +175,7 @@ export default function AdminOverviewPage() {
                   <p className="text-xs text-slate-500">{log.userName || 'System'} {log.userRole ? `(${log.userRole})` : ''}</p>
                 </div>
                 <span className="text-xs text-slate-400 whitespace-nowrap">
-                  {log.timestamp ? format(new Date(log.timestamp), 'MMM d, HH:mm') : '—'}
+                  {log.timestamp ? format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm') : '—'}
                 </span>
               </div>
             ))}

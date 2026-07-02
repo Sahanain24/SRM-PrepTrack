@@ -79,28 +79,35 @@ export async function GET(request: NextRequest) {
 
     // ── summary ───────────────────────────────────────────────────────────────
     if (type === 'summary') {
-      const [total, users] = await Promise.all([
-        SelfAssessment.countDocuments(),
-        User.countDocuments({ role: 'student', isActive: true }),
-      ]);
-      const agg = await SelfAssessment.aggregate([
-        {
-          $group: {
-            _id: null,
-            avgScore:    { $avg: '$employabilityScore' },
-            avgCGPA:     { $avg: '$sectionA.cgpa' },
-            highCount:   { $sum: { $cond: [{ $gte: ['$employabilityScore', 70] }, 1, 0] } },
-            lowCount:    { $sum: { $cond: [{ $lt:  ['$employabilityScore', 50] }, 1, 0] } },
+      // Get active student IDs, then scope everything to those IDs
+      const activeStudents = await User.find({ role: 'student', isActive: true }).select('_id').lean();
+      const activeIds      = activeStudents.map((s: any) => s._id);
+      const totalStudents  = activeIds.length;
+
+      const [totalAssessed, agg] = await Promise.all([
+        SelfAssessment.countDocuments({ userId: { $in: activeIds } }),
+        SelfAssessment.aggregate([
+          { $match: { userId: { $in: activeIds } } },
+          {
+            $group: {
+              _id: null,
+              avgScore:  { $avg: '$employabilityScore' },
+              avgCGPA:   { $avg: '$sectionA.cgpa' },
+              highCount: { $sum: { $cond: [{ $gte: ['$employabilityScore', 70] }, 1, 0] } },
+              lowCount:  { $sum: { $cond: [{ $lt:  ['$employabilityScore', 50] }, 1, 0] } },
+            },
           },
-        },
+        ]),
       ]);
+
       const s = agg[0] || {};
+
       return NextResponse.json({
-        totalAssessments: total,
-        totalAssessed:    total,
-        totalStudents:    users,
-        completionRate:   users ? Math.round((total / users) * 100) : 0,
-        avgScore:         Math.round(s.avgScore  || 0),
+        totalAssessments: totalAssessed,
+        totalAssessed,
+        totalStudents,
+        completionRate:   totalStudents ? Math.round((totalAssessed / totalStudents) * 100) : 0,
+        avgScore:         Math.round(s.avgScore || 0),
         avgCGPA:          +(s.avgCGPA  || 0).toFixed(2),
         highReadiness:    s.highCount  || 0,
         lowReadiness:     s.lowCount   || 0,

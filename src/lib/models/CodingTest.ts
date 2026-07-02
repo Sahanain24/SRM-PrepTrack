@@ -8,7 +8,17 @@ const CodingTestSchema = new mongoose.Schema({
 
   examDate:     { type: String },  // 'YYYY-MM-DD'
   startTime:    { type: String },  // 'HH:MM'
+  deadlineDate: { type: String },  // 'YYYY-MM-DD'
+  deadlineTime: { type: String },  // 'HH:MM'
   durationMins: { type: Number, required: true },
+
+  // Per-student reattempt grants (after deadline)
+  reAttemptPermissions: [{
+    userId:    { type: String, required: true },
+    userName:  { type: String },
+    grantedAt: { type: Date, default: Date.now },
+    used:      { type: Boolean, default: false },
+  }],
 
   targetPrograms: [{ type: String }],
   targetYears:    [{ type: Number }],

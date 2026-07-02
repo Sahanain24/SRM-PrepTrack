@@ -31,7 +31,7 @@ const generateQuizPrompt = ai.definePrompt({
   name: 'generateQuizPrompt',
   input: { schema: GenerateQuizInputSchema },
   output: { schema: GenerateQuizOutputSchema },
-  prompt: `You are an expert educator at SRM Study Buddy. Generate a quiz with {{count}} multiple-choice questions.
+  prompt: `You are an expert educator at SRM PrepTrack. Generate a quiz with {{count}} multiple-choice questions.
   
   {{#if content}}
   Base the questions strictly on the following study material:

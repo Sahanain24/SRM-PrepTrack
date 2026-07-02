@@ -149,7 +149,7 @@ export default function Home() {
               <GraduationCap className="h-5 w-5" />
             </div>
             <span className="text-xl font-headline font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
-              SRM Study Buddy
+              SRM PrepTrack
             </span>
           </Link>
           <nav className="ml-auto flex items-center gap-6">
@@ -185,9 +185,12 @@ export default function Home() {
               </span>
             </h1>
 
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-300 leading-relaxed">
-              SRM Study Buddy combines AI-powered exams, aptitude practice, coding challenges,
-              speech coaching, and teacher analytics — built for SRM Institute students and faculty.
+            <p className="max-w-xl mx-auto text-xl md:text-2xl font-semibold text-indigo-300 tracking-wide">
+              Track your Prep. Crack your Placement.
+            </p>
+            <p className="max-w-2xl mx-auto text-base md:text-lg text-slate-400 leading-relaxed mt-2">
+              SRM PrepTrack combines AI-powered exams, aptitude practice, coding challenges,
+              and teacher analytics — built for SRM Institute students and faculty.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -318,7 +321,7 @@ export default function Home() {
               Ready to ace your placements?
             </h2>
             <p className="text-slate-300 text-lg leading-relaxed">
-              Join SRM Study Buddy today. Practice smarter, get feedback faster, and walk into every interview prepared.
+              Join SRM PrepTrack today. Practice smarter, get feedback faster, and walk into every interview prepared.
             </p>
             <Button asChild size="lg" className="h-14 px-10 text-base bg-white text-indigo-700 hover:bg-blue-50 shadow-2xl rounded-xl font-bold transition-all duration-300">
               <Link href="/auth" className="flex items-center gap-2">
@@ -337,7 +340,10 @@ export default function Home() {
             <div className="p-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
               <GraduationCap className="h-4 w-4" />
             </div>
-            <span className="font-headline font-bold text-white text-sm">SRM Study Buddy</span>
+            <div>
+              <span className="font-headline font-bold text-white text-sm block">SRM PrepTrack</span>
+              <span className="text-[10px] text-slate-500">Track your Prep. Crack your Placement.</span>
+            </div>
           </div>
           <p className="text-xs text-slate-500">© {new Date().getFullYear()} SRM Institute of Science and Technology. All rights reserved.</p>
           <nav className="flex gap-6">

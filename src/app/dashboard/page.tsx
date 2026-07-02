@@ -90,7 +90,7 @@ export default function DashboardOverview() {
           { label: 'Coding Exercises', value: stats.codingDone,    sub: 'Building history',               icon: Code,        bg: 'from-white to-emerald-50', iconBg: 'bg-emerald-100 text-emerald-600' },
           { label: 'Exams Taken',      value: stats.examsTaken,    sub: `Avg score ${stats.examAvg}%`,    icon: Trophy,      bg: 'from-white to-violet-50',  iconBg: 'bg-violet-100 text-violet-600' },
           { label: 'Aptitude Tests',   value: stats.aptitudeTaken, sub: `Avg score ${stats.aptitudeAvg}%`,icon: Brain,       bg: 'from-white to-orange-50',  iconBg: 'bg-orange-100 text-orange-600' },
-          { label: 'User Role',        value: user.role,           sub: 'SRM Study Buddy',                icon: UserCircle,  bg: 'from-white to-purple-50',  iconBg: 'bg-purple-100 text-purple-600' },
+          { label: 'User Role',        value: user.role,           sub: 'SRM PrepTrack',                icon: UserCircle,  bg: 'from-white to-purple-50',  iconBg: 'bg-purple-100 text-purple-600' },
         ].map(s => (
           <Card key={s.label} className={`border-none shadow-lg bg-gradient-to-br ${s.bg} hover:shadow-xl transition-all duration-300`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -198,7 +198,7 @@ export default function DashboardOverview() {
                 <div key={f._id || f.id} className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                   <p className="text-sm mb-2 text-slate-700">{f.message}</p>
                   <div className="flex justify-between items-center text-xs text-slate-500">
-                    <span>Teacher · {new Date(f.date).toLocaleDateString()}</span>
+                    <span>Teacher · {new Intl.DateTimeFormat('en-GB').format(new Date(f.date))}</span>
                     {!f.read && <Badge variant="secondary" className="bg-red-100 text-red-700 text-[10px]">New</Badge>}
                   </div>
                 </div>

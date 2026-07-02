@@ -36,8 +36,11 @@ type Phase = 'setup' | 'generating' | 'exam' | 'results';
 interface Subject { _id?: string; name: string; syllabus: string; topics: string[] }
 interface Course  { _id: string; name: string; description: string; subjects: Subject[] }
 interface LeaderboardEntry {
-  _id: { userId: string }; userName: string; subjectName: string;
+  userId: string; userName: string;
+  courseId: string; courseName: string;
   bestScore: number; attempts: number;
+  rollNumber: string; program: string; year: string | number; section: string;
+  examDate: string;
 }
 
 function fmt(s: number) {
@@ -56,6 +59,7 @@ function SetupScreen({ onStart, onStartScheduled }: {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [count, setCount]                     = useState(10);
   const [leaderboard, setLeaderboard]         = useState<LeaderboardEntry[]>([]);
+  const [lbExam,      setLbExam]              = useState<string>('');
   const [tab, setTab]                         = useState<'setup' | 'scheduled' | 'leaderboard'>('setup');
   const [scheduledExams, setScheduledExams]   = useState<any[]>([]);
   const [schedLoading, setSchedLoading]       = useState(false);
@@ -87,7 +91,9 @@ function SetupScreen({ onStart, onStartScheduled }: {
       fetch('/api/exam-results?leaderboard=1').then(r => r.json()),
     ]).then(([c, l]) => {
       setCourses(Array.isArray(c) ? c : []);
-      setLeaderboard(Array.isArray(l) ? l : []);
+      const lb = Array.isArray(l) ? l : [];
+      setLeaderboard(lb);
+      if (lb.length > 0) setLbExam(lb[0].courseId);
       setLoading(false);
     }).catch(() => setLoading(false));
 
@@ -234,7 +240,15 @@ function SetupScreen({ onStart, onStartScheduled }: {
           ) : (() => {
             const byRecent = (a: any, b: any) =>
               new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-            const pending   = scheduledExams.filter(e => !e.alreadyAttempted).sort(byRecent);
+            const now = new Date();
+            const isPastDeadline = (e: any) => {
+              if (!e.deadlineDate) return false;
+              const dl = new Date(`${e.deadlineDate}T${e.deadlineTime || '23:59'}:00`);
+              return dl < now;
+            };
+            const pending   = scheduledExams.filter(e => !e.alreadyAttempted && !isPastDeadline(e)).sort(byRecent);
+            const locked    = scheduledExams.filter(e => !e.alreadyAttempted && isPastDeadline(e) && !e.hasReAttemptPermission).sort(byRecent);
+            const reattempt = scheduledExams.filter(e => !e.alreadyAttempted && isPastDeadline(e) &&  e.hasReAttemptPermission).sort(byRecent);
             const completed = scheduledExams.filter(e =>  e.alreadyAttempted).sort(byRecent);
             return (
               <>
@@ -252,8 +266,9 @@ function SetupScreen({ onStart, onStartScheduled }: {
                               </div>
                               {exam.subject && <p className="text-sm text-slate-500">{exam.subject}</p>}
                               <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                                {exam.examDate && <span>📅 {new Date(exam.examDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                                {exam.examDate && <span>📅 {new Intl.DateTimeFormat('en-GB').format(new Date(exam.examDate))}</span>}
                                 {exam.startTime && <span>🕐 {exam.startTime}</span>}
+                                {exam.deadlineDate && <span className="text-red-500">⏰ Deadline: {new Intl.DateTimeFormat('en-GB').format(new Date(exam.deadlineDate))} {exam.deadlineTime || ''}</span>}
                                 <span>⏱ {exam.durationMins} min</span>
                                 <span>📝 {exam.totalQuestions} questions</span>
                                 <span>⭐ {exam.totalMarks} marks</span>
@@ -281,6 +296,61 @@ function SetupScreen({ onStart, onStartScheduled }: {
                   </div>
                 )}
 
+                {reattempt.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mt-2">🔓 Reattempt Granted</p>
+                    {reattempt.map((exam: any) => (
+                      <Card key={exam._id} className="border-blue-300 shadow-sm">
+                        <CardContent className="pt-5 pb-5">
+                          <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-semibold text-slate-900">{exam.title}</h3>
+                                <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px]">Reattempt Allowed</Badge>
+                              </div>
+                              {exam.subject && <p className="text-sm text-slate-500">{exam.subject}</p>}
+                              <p className="text-xs text-blue-600">Your teacher has granted you a reattempt for this test.</p>
+                              <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                                <span>⏱ {exam.durationMins} min</span>
+                                <span>📝 {exam.totalQuestions} questions</span>
+                              </div>
+                            </div>
+                            <Button onClick={() => handleStartScheduled(exam)} disabled={starting === exam._id}
+                              className="rounded-xl gap-2 flex-shrink-0 bg-blue-600 hover:bg-blue-700 text-white">
+                              {starting === exam._id ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting…</> : <><ChevronRight className="h-4 w-4" /> Start Test</>}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {locked.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mt-2">🔒 Deadline Passed</p>
+                    {locked.map((exam: any) => (
+                      <Card key={exam._id} className="border-red-200 shadow-sm opacity-70">
+                        <CardContent className="pt-5 pb-5">
+                          <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-semibold text-slate-700">{exam.title}</h3>
+                                <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">Deadline Passed</Badge>
+                              </div>
+                              {exam.subject && <p className="text-sm text-slate-400">{exam.subject}</p>}
+                              <p className="text-xs text-red-500">The deadline for this test has passed. Contact your teacher to request a reattempt.</p>
+                            </div>
+                            <Button disabled className="rounded-xl gap-2 flex-shrink-0" variant="outline">
+                              🔒 Locked
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
                 {completed.length > 0 && (
                   <div className="space-y-3">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-2">Completed Tests</p>
@@ -300,7 +370,7 @@ function SetupScreen({ onStart, onStartScheduled }: {
                                 </div>
                                 {exam.subject && <p className="text-sm text-slate-500">{exam.subject}</p>}
                                 <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                                  {exam.examDate && <span>📅 {new Date(exam.examDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                                  {exam.examDate && <span>📅 {new Intl.DateTimeFormat('en-GB').format(new Date(exam.examDate))}</span>}
                                   <span>📝 {exam.totalQuestions} questions</span>
                                   <span>⭐ {exam.totalMarks} marks</span>
                                 </div>
@@ -344,41 +414,102 @@ function SetupScreen({ onStart, onStartScheduled }: {
           })()}
         </TabsContent>
 
-        <TabsContent value="leaderboard" className="mt-4">
-          <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Top Performers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {leaderboard.length === 0 ? (
-                <p className="text-center text-slate-400 py-8 text-sm">No attempts yet. Be the first!</p>
-              ) : (
-                <div className="space-y-2">
-                  {leaderboard.slice(0, 20).map((entry, idx) => {
-                    const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
-                    return (
-                      <div key={idx} className={`flex items-center justify-between p-3 rounded-xl border
-                        ${idx < 3 ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
-                        <div className="flex items-center gap-3">
-                          <span className="text-lg w-8 text-center">
-                            {medal ?? <span className="text-sm font-bold text-slate-400">#{idx + 1}</span>}
-                          </span>
-                          <div>
-                            <p className="font-semibold text-slate-900 text-sm">{entry.userName}</p>
-                            <p className="text-xs text-slate-500">{entry.subjectName}</p>
-                          </div>
-                        </div>
-                        <span className={`font-bold text-sm
-                          ${entry.bestScore >= 80 ? 'text-green-600' : entry.bestScore >= 60 ? 'text-yellow-600' : 'text-red-500'}`}>
-                          {Math.round(entry.bestScore)}%
-                        </span>
-                      </div>
-                    );
-                  })}
+        <TabsContent value="leaderboard" className="mt-4 space-y-4">
+          {leaderboard.length === 0 ? (
+            <Card className="border-slate-200 shadow-sm">
+              <CardContent className="py-12 text-center text-slate-400 text-sm">No attempts yet. Be the first!</CardContent>
+            </Card>
+          ) : (() => {
+            // Group by exam
+            const examMap = new Map<string, { name: string; entries: LeaderboardEntry[] }>();
+            leaderboard.forEach(e => {
+              if (!examMap.has(e.courseId)) examMap.set(e.courseId, { name: e.courseName || 'Unknown Test', entries: [] });
+              examMap.get(e.courseId)!.entries.push(e);
+            });
+            const exams = Array.from(examMap.entries());
+
+            const active     = examMap.get(lbExam) || exams[0]?.[1];
+            const activeId   = lbExam || exams[0]?.[0];
+            const rows       = (active?.entries || []).sort((a, b) => b.bestScore - a.bestScore);
+
+            return (
+              <>
+                {/* Exam dropdown selector */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <label className="text-xs font-semibold text-slate-500 whitespace-nowrap">Filter by Test:</label>
+                  <select
+                    value={activeId}
+                    onChange={e => setLbExam(e.target.value)}
+                    className="flex-1 min-w-[220px] px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  >
+                    {exams.map(([id, { name, entries }]) => {
+                      const date = entries[0]?.examDate;
+                      const label = date
+                        ? `${name} — ${new Intl.DateTimeFormat('en-GB').format(new Date(date))}`
+                        : name;
+                      return <option key={id} value={id}>{label}</option>;
+                    })}
+                  </select>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                <Card className="border-slate-200 shadow-sm">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      🏆 {active?.name || 'Leaderboard'}
+                      {rows[0]?.examDate && (
+                        <span className="text-xs font-normal text-slate-400">
+                          📅 {new Intl.DateTimeFormat('en-GB').format(new Date(rows[0].examDate))}
+                        </span>
+                      )}
+                      <span className="text-xs font-normal text-slate-400">· {rows.length} students</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-100 bg-slate-50">
+                            <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 w-10">Rank</th>
+                            <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Student</th>
+                            <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Roll No.</th>
+                            <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500">Program</th>
+                            <th className="text-center px-4 py-2.5 text-xs font-semibold text-slate-500">Year</th>
+                            <th className="text-center px-4 py-2.5 text-xs font-semibold text-slate-500">Section</th>
+                            <th className="text-center px-4 py-2.5 text-xs font-semibold text-slate-500">Best Score</th>
+                            <th className="text-center px-4 py-2.5 text-xs font-semibold text-slate-500">Attempts</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                          {rows.map((entry, idx) => {
+                            const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null;
+                            const scoreColor = entry.bestScore >= 80 ? 'text-green-600' : entry.bestScore >= 60 ? 'text-amber-600' : 'text-red-500';
+                            return (
+                              <tr key={entry.userId + entry.courseId}
+                                className={`transition-colors hover:bg-slate-50 ${idx < 3 ? 'bg-amber-50/40' : ''}`}>
+                                <td className="px-4 py-3 text-center">
+                                  {medal ? <span className="text-lg">{medal}</span>
+                                         : <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>}
+                                </td>
+                                <td className="px-4 py-3 font-semibold text-slate-900">{entry.userName}</td>
+                                <td className="px-4 py-3 font-mono text-xs text-slate-600">{entry.rollNumber || '—'}</td>
+                                <td className="px-4 py-3 text-xs text-slate-600">{entry.program || '—'}</td>
+                                <td className="px-4 py-3 text-center text-xs text-slate-600">{entry.year ? `Y${entry.year}` : '—'}</td>
+                                <td className="px-4 py-3 text-center text-xs text-slate-600">{entry.section || '—'}</td>
+                                <td className="px-4 py-3 text-center">
+                                  <span className={`font-bold ${scoreColor}`}>{Math.round(entry.bestScore)}%</span>
+                                </td>
+                                <td className="px-4 py-3 text-center text-xs text-slate-500">{entry.attempts}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            );
+          })()}
         </TabsContent>
       </Tabs>
     </div>
@@ -580,6 +711,37 @@ function ExamScreen({ examData, totalSeconds, onComplete }: {
     };
   }, [submitExam]);
 
+  // ── Calculator ────────────────────────────────────────────────────────────
+  const [calcOpen,    setCalcOpen]    = useState(false);
+  const [calcDisplay, setCalcDisplay] = useState('0');
+  const [calcPrev,    setCalcPrev]    = useState('');
+  const [calcOp,      setCalcOp]      = useState('');
+  const [calcFresh,   setCalcFresh]   = useState(true);
+
+  const calcPress = (val: string) => {
+    if (val === 'C')  { setCalcDisplay('0'); setCalcPrev(''); setCalcOp(''); setCalcFresh(true); return; }
+    if (val === '⌫')  { setCalcDisplay(d => d.length > 1 ? d.slice(0, -1) : '0'); return; }
+    if (['+','−','×','÷'].includes(val)) { setCalcPrev(calcDisplay); setCalcOp(val); setCalcFresh(true); return; }
+    if (val === '=') {
+      if (!calcOp || !calcPrev) return;
+      const a = parseFloat(calcPrev), b = parseFloat(calcDisplay);
+      const res = calcOp === '+' ? a + b : calcOp === '−' ? a - b : calcOp === '×' ? a * b : b !== 0 ? a / b : 'Error';
+      setCalcDisplay(typeof res === 'number' ? parseFloat(res.toFixed(10)).toString() : 'Error');
+      setCalcPrev(''); setCalcOp(''); setCalcFresh(true); return;
+    }
+    if (val === '.' && calcDisplay.includes('.')) return;
+    setCalcDisplay(d => calcFresh ? (val === '.' ? '0.' : val) : (d === '0' && val !== '.' ? val : d + val));
+    setCalcFresh(false);
+  };
+
+  const CALC_KEYS = [
+    ['C','⌫','÷','×'],
+    ['7','8','9','−'],
+    ['4','5','6','+'],
+    ['1','2','3','='],
+    ['.','0'],
+  ];
+
   const warn    = timeLeft <= 60;
   const timePct = (timeLeft / totalSeconds) * 100;
 
@@ -733,6 +895,48 @@ function ExamScreen({ examData, totalSeconds, onComplete }: {
                 <Progress value={(answered / examData.questions.length) * 100} className="h-2 mb-1" />
                 <p className="text-xs text-center text-slate-500">{answered} of {examData.questions.length} answered</p>
               </div>
+
+              {/* Calculator */}
+              <div className="pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setCalcOpen(o => !o)}
+                  className="w-full flex items-center justify-between text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors py-1"
+                >
+                  <span>🧮 Calculator</span>
+                  <span className="text-slate-400">{calcOpen ? '▲' : '▼'}</span>
+                </button>
+                {calcOpen && (
+                  <div className="mt-2">
+                    <div className="bg-slate-900 text-white rounded-xl px-3 py-2 mb-2 text-right">
+                      {calcOp && <p className="text-[10px] text-slate-400">{calcPrev} {calcOp}</p>}
+                      <p className="text-xl font-mono font-bold overflow-hidden text-ellipsis">{calcDisplay}</p>
+                    </div>
+                    <div className="space-y-1">
+                      {CALC_KEYS.map((row, ri) => (
+                        <div key={ri} className="flex gap-1">
+                          {row.map(k => {
+                            const isOp = ['+','−','×','÷'].includes(k);
+                            const isEq = k === '=';
+                            const isCl = k === 'C';
+                            return (
+                              <button key={k} type="button" onClick={() => calcPress(k)}
+                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all active:scale-95
+                                  ${isCl ? 'bg-red-100 text-red-700 hover:bg-red-200' :
+                                    isEq ? 'bg-orange-500 text-white hover:bg-orange-600' :
+                                    isOp ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' :
+                                           'bg-slate-100 text-slate-800 hover:bg-slate-200'}`}>
+                                {k}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {flagged.some(Boolean) && (
                 <div className="pt-3 border-t border-slate-100">
                   <p className="text-xs font-semibold text-amber-700 mb-1.5">Flagged for review:</p>
@@ -981,7 +1185,11 @@ export default function ExamPage() {
     if (!examData) return;
     const correct = examData.questions.reduce((acc, q, i) => acc + (q.correctIndex === userAnswers[i] ? 1 : 0), 0);
     const pct = Math.round((correct / examData.questions.length) * 100);
-    setAnswers(userAnswers); setScore(correct); setTimeTaken(time); setTabViolations(tabViol); setPhase('results');
+    // Defer parent state updates to avoid "setState during render" error when
+    // submit is triggered by a browser event (blur/visibilitychange) mid-render
+    setTimeout(() => {
+      setAnswers(userAnswers); setScore(correct); setTimeTaken(time); setTabViolations(tabViol); setPhase('results');
+    }, 0);
     signalExamActive(false);
     try {
       const user = getCurrentUser();

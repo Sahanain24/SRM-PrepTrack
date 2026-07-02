@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { GraduationCap, Loader2, Eye, EyeOff, KeyRound, Mail, Users, UserCog, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, Loader2, Eye, EyeOff, KeyRound, Users, UserCog, CheckCircle2 } from 'lucide-react';
 import { setCurrentUser, UserRole } from '@/lib/mock-db';
 
 // Demo users for offline/fallback mode
@@ -79,10 +79,7 @@ export default function AuthPage() {
   const [pwError, setPwError]             = useState('');
 
   // ── Forgot password dialog ────────────────────────────────────────────────
-  const [forgotOpen, setForgotOpen]     = useState(false);
-  const [forgotEmail, setForgotEmail]   = useState('');
-  const [forgotSent, setForgotSent]     = useState(false);
-  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const strength = getStrength(regData.password);
 
@@ -275,15 +272,6 @@ export default function AuthPage() {
   };
 
   // ─────────────────────────────────────────────────────────────────────────
-  // FORGOT PASSWORD
-  // ─────────────────────────────────────────────────────────────────────────
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotLoading(true);
-    await new Promise(res => setTimeout(res, 1200)); // simulate email send
-    setForgotSent(true);
-    setForgotLoading(false);
-  };
 
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
@@ -298,7 +286,7 @@ export default function AuthPage() {
             <GraduationCap className="h-8 w-8" />
           </div>
           <h1 className="text-3xl font-headline font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            SRM Study Buddy
+            SRM PrepTrack
           </h1>
           <p className="text-sm text-slate-500 mt-1">Academic Excellence Platform</p>
         </div>
@@ -382,7 +370,7 @@ export default function AuthPage() {
                 {/* Forgot password */}
                 <div className="flex justify-end">
                   <button type="button"
-                    onClick={() => { setForgotOpen(true); setForgotSent(false); setForgotEmail(''); }}
+                    onClick={() => setForgotOpen(true)}
                     className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline">
                     Forgot password?
                   </button>
@@ -446,7 +434,7 @@ export default function AuthPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="sregEmail">Email Address</Label>
-                      <Input id="sregEmail" type="email" placeholder="yourname@srmist.edu.in" required
+                      <Input id="sregEmail" type="email" placeholder="yourid@srmist.edu.in" required
                         value={studentReg.email} onChange={e => setStudentReg(p => ({ ...p, email: e.target.value }))} />
                     </div>
 
@@ -539,7 +527,7 @@ export default function AuthPage() {
                       <Label htmlFor="staffEmail">Email Address</Label>
                       <Input
                         id="staffEmail" type="email" required
-                        placeholder="yourname@srmist.edu.in.in"
+                        placeholder="yourid@srmist.edu.in"
                         value={staffEmail}
                         onChange={e => setStaffEmail(e.target.value)}
                       />
@@ -565,7 +553,7 @@ export default function AuthPage() {
 
                     <div className="flex justify-end">
                       <button type="button"
-                        onClick={() => { setForgotOpen(true); setForgotSent(false); setForgotEmail(''); }}
+                        onClick={() => setForgotOpen(true)}
                         className="text-xs text-violet-600 hover:text-violet-800 hover:underline">
                         Forgot password?
                       </button>
@@ -686,55 +674,62 @@ export default function AuthPage() {
       </div>
 
       {/* ── Forgot Password Dialog ── */}
-      <Dialog open={forgotOpen} onOpenChange={open => { setForgotOpen(open); if (!open) setForgotSent(false); }}>
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-indigo-600" />Forgot Password
+              <KeyRound className="h-5 w-5 text-indigo-600" /> Forgot Password?
             </DialogTitle>
-            <DialogDescription>
-              {forgotSent
-                ? 'Check your email for reset instructions.'
-                : portal === 'student'
-                  ? 'Enter your Roll Number. Your default password is your Roll Number. Contact admin if you need a reset.'
-                  : 'Enter your registered email address and we will send you a reset link.'}
-            </DialogDescription>
           </DialogHeader>
 
-          {forgotSent ? (
-            <div className="py-4 text-center space-y-3">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-                <Mail className="h-8 w-8 text-green-600" />
+          <div className="py-2 space-y-4">
+            {portal === 'student' ? (
+              <div className="space-y-3">
+                <div className="flex gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+                  <KeyRound className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800">Default password is your Roll Number</p>
+                    <p className="text-xs text-blue-600 mt-0.5">
+                      Your password is set to your Roll Number by default (e.g. <span className="font-mono">RA2211003010001</span>). Try logging in with it.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                  <Users className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">Changed your password and forgot it?</p>
+                    <p className="text-xs text-amber-600 mt-0.5">
+                      Contact your <strong>class teacher or admin</strong>. They can reset your password back to your Roll Number from the admin panel.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-slate-700 font-medium">Reset link sent!</p>
-              <p className="text-xs text-slate-500">
-                If <strong>{forgotEmail}</strong> is registered, you will receive an email shortly.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleForgotPassword} className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="forgotEmail">
-                  {portal === 'student' ? 'Roll Number' : 'Email Address'}
-                </Label>
-                <Input
-                  id="forgotEmail" required
-                  placeholder={portal === 'student' ? 'e.g. RA2211003010001' : 'yourname@srmist.edu.in.in'}
-                  value={forgotEmail}
-                  onChange={e => setForgotEmail(e.target.value)}
-                  className="rounded-xl"
-                />
+            ) : (
+              <div className="space-y-3">
+                <div className="flex gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+                  <KeyRound className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800">Default password</p>
+                    <p className="text-xs text-blue-600 mt-0.5">
+                      Your default password is the part of your email before "@" (e.g. email <span className="font-mono">john@srmist.edu.in</span> → password <span className="font-mono">john</span>).
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                  <Users className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">Still can't log in?</p>
+                    <p className="text-xs text-amber-600 mt-0.5">
+                      Contact the <strong>system administrator</strong>. They can reset your password from the Staff Management panel.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <Button type="submit" disabled={forgotLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
-                {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
-                Send Reset Link
-              </Button>
-            </form>
-          )}
+            )}
+          </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setForgotOpen(false)} className="w-full text-slate-500 text-sm">
+            <Button onClick={() => setForgotOpen(false)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
               Back to Login
             </Button>
           </DialogFooter>

@@ -27,6 +27,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const ROLL_RE  = /^[a-zA-Z0-9]{15}$/;
+const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i;
+
+function validateStudent(name: string, roll: string, email: string): string | null {
+  if (!name || !roll) return 'Name and roll number are required';
+  if (!ROLL_RE.test(roll)) return `Roll number "${roll}" must be exactly 15 alphanumeric characters`;
+  if (email && !EMAIL_RE.test(email)) return `Email "${email}" must be a valid @srmist.edu.in address`;
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
@@ -37,20 +47,36 @@ export async function POST(request: NextRequest) {
       const results = { created: 0, skipped: 0, errors: [] as string[] };
 
       for (const s of body) {
-        const roll = s.rollNumber?.toString().toUpperCase().trim();
-        if (!roll || !s.name) {
-          results.errors.push(`Missing rollNumber or name`);
-          continue;
-        }
+        const roll  = s.rollNumber?.toString().toUpperCase().trim();
+        const email = s.email?.toString().trim().toLowerCase() || '';
+        const name  = s.name?.toString().trim()  || '';
+
+        const err = validateStudent(name, roll, email);
+        if (err) { results.errors.push(err); continue; }
+
         try {
           const existing = await User.findOne({ rollNumber: roll });
-          if (existing) { results.skipped++; continue; }
+          if (existing) {
+            if (existing.isActive === false) {
+              await User.findByIdAndUpdate(existing._id, {
+                isActive:   true,
+                name:       name                           || existing.name,
+                email:      email                          || existing.email,
+                program:    s.program?.toString().trim()    || existing.program    || '',
+                department: s.department?.toString().trim() || existing.department || '',
+                year:       parseInt(s.year)               || existing.year       || 1,
+                batch:      s.batch?.toString().trim()      || existing.batch      || '',
+                section:    s.section?.toString().trim()    || existing.section    || '',
+              });
+              results.created++;
+            } else {
+              results.skipped++;
+            }
+            continue;
+          }
 
           await User.create({
-            name:       s.name.toString().trim(),
-            rollNumber: roll,
-            password:   roll,
-            email:      s.email?.toString().trim() || '',
+            name, rollNumber: roll, password: roll, email,
             role:       'student',
             program:    s.program?.toString().trim()    || '',
             department: s.department?.toString().trim() || '',
@@ -70,21 +96,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Single student
-    const roll = body.rollNumber?.toUpperCase().trim();
-    if (!roll || !body.name) {
-      return NextResponse.json({ error: 'Name and roll number are required' }, { status: 400 });
-    }
+    const roll  = body.rollNumber?.toString().toUpperCase().trim();
+    const email = body.email?.trim().toLowerCase() || '';
+    const name  = body.name?.trim()  || '';
+
+    const validErr = validateStudent(name, roll, email);
+    if (validErr) return NextResponse.json({ error: validErr }, { status: 400 });
 
     const existing = await User.findOne({ rollNumber: roll });
     if (existing) {
+      // If the student was previously deactivated, reactivate with all new data
+      if (existing.isActive === false) {
+        const reactivated = await User.findByIdAndUpdate(
+          existing._id,
+          {
+            isActive:   true,
+            name:       name       || existing.name,
+            email:      email      || existing.email,
+            program:    body.program?.trim()    || existing.program    || '',
+            department: body.department?.trim() || existing.department || '',
+            year:       parseInt(body.year)     || existing.year       || 1,
+            batch:      body.batch?.trim()      || existing.batch      || '',
+            section:    body.section?.trim()    || existing.section    || '',
+          },
+          { new: true }
+        ).select('-password');
+        return NextResponse.json(reactivated, { status: 200 });
+      }
       return NextResponse.json({ error: 'Roll number already exists' }, { status: 409 });
     }
 
     const student = await User.create({
-      name:       body.name.trim(),
-      rollNumber: roll,
-      password:   roll,
-      email:      body.email?.trim() || '',
+      name, rollNumber: roll, password: roll, email,
       role:       'student',
       program:    body.program?.trim()    || '',
       department: body.department?.trim() || '',

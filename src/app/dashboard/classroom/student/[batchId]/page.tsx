@@ -44,10 +44,10 @@ function fmtSize(bytes: number) {
   return `${(bytes/1024**2).toFixed(1)} MB`;
 }
 function fmtDateTime(iso: string) {
-  return new Date(iso).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));
 }
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+  try { return new Intl.DateTimeFormat('en-GB').format(new Date(iso)); } catch { return '—'; }
 }
 function isPast(iso?: string) { return iso ? new Date(iso) < new Date() : false; }
 

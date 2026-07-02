@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   Upload, UserPlus, Search, Download, RefreshCw,
   Trash2, KeyRound, CheckCircle2, AlertTriangle,
-  Users, FileSpreadsheet, XCircle,
+  Users, FileSpreadsheet, XCircle, Pencil,
 } from 'lucide-react';
 
 const PROGRAMS = ['BCA', 'BCA(DS)', 'BCom', 'MSc(ADS)', 'MCom', 'MCA', 'MCA GenAI'];
@@ -61,6 +61,11 @@ export default function StudentManagementPage() {
   const [addLoading, setAddLoading] = useState(false);
   const [newStudent, setNewStudent] = useState(BLANK_STUDENT);
 
+  // Edit student dialog
+  const [editStudent,  setEditStudent]  = useState<Student | null>(null);
+  const [editData,     setEditData]     = useState<any>(null);
+  const [editLoading,  setEditLoading]  = useState(false);
+
   // Import dialog
   const [importOpen,    setImportOpen]    = useState(false);
   const [importPreview, setImportPreview] = useState<any[]>([]);
@@ -88,8 +93,18 @@ export default function StudentManagementPage() {
 
   // ── Add single student ──────────────────────────────────────────────────────
   const handleAddStudent = async () => {
-    if (!newStudent.name.trim() || !newStudent.rollNumber.trim()) {
+    const roll  = newStudent.rollNumber.trim();
+    const email = newStudent.email.trim();
+    if (!newStudent.name.trim() || !roll) {
       toast({ title: 'Name and Roll Number are required', variant: 'destructive' });
+      return;
+    }
+    if (!/^[a-zA-Z0-9]{15}$/.test(roll)) {
+      toast({ title: 'Roll number must be exactly 15 alphanumeric characters', variant: 'destructive' });
+      return;
+    }
+    if (email && !/^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i.test(email)) {
+      toast({ title: 'Email must be a valid @srmist.edu.in address', variant: 'destructive' });
       return;
     }
     setAddLoading(true);
@@ -176,6 +191,53 @@ export default function StudentManagementPage() {
     loadStudents();
   };
 
+  const openEdit = (s: Student) => {
+    setEditStudent(s);
+    setEditData({
+      name:       s.name,
+      rollNumber: s.rollNumber,
+      email:      s.email,
+      program:    s.program,
+      department: s.department,
+      year:       s.year,
+      batch:      s.batch,
+      section:    s.section,
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editStudent || !editData) return;
+    const roll  = (editData.rollNumber || '').trim().toUpperCase();
+    const email = (editData.email || '').trim().toLowerCase();
+    if (!editData.name?.trim()) {
+      toast({ title: 'Name is required', variant: 'destructive' }); return;
+    }
+    if (roll && !/^[a-zA-Z0-9]{15}$/.test(roll)) {
+      toast({ title: 'Roll number must be exactly 15 alphanumeric characters', variant: 'destructive' }); return;
+    }
+    if (email && !/^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i.test(email)) {
+      toast({ title: 'Email must be a valid @srmist.edu.in address', variant: 'destructive' }); return;
+    }
+    setEditLoading(true);
+    try {
+      const res  = await fetch(`/api/admin/students/${editStudent._id}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ ...editData, rollNumber: roll, email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Update failed');
+      toast({ title: `${editData.name} updated successfully` });
+      setEditStudent(null);
+      setEditData(null);
+      loadStudents();
+    } catch (err: any) {
+      toast({ title: err.message, variant: 'destructive' });
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   // ── Excel template download ─────────────────────────────────────────────────
   const downloadTemplate = () => {
     const wb = XLSX.utils.book_new();
@@ -220,6 +282,9 @@ export default function StudentManagementPage() {
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={downloadTemplate} className="rounded-xl gap-2">
             <Download className="h-4 w-4" /> Excel Template
+          </Button>
+          <Button variant="outline" onClick={() => window.location.href = '/dashboard/guide'} className="rounded-xl gap-2 border-violet-300 text-violet-700 hover:bg-violet-50">
+            <FileSpreadsheet className="h-4 w-4" /> Student Guide (PDF)
           </Button>
           <Button
             variant="outline"
@@ -367,6 +432,14 @@ export default function StudentManagementPage() {
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost" size="sm"
+                            title="Edit student details"
+                            onClick={() => openEdit(student)}
+                            className="text-slate-400 hover:text-indigo-600"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="sm"
                             title="Reset password to roll number"
                             onClick={() => resetPassword(student)}
                             className="text-slate-400 hover:text-blue-600"
@@ -410,23 +483,49 @@ export default function StudentManagementPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Full Name *</Label>
+              <Input placeholder="Sahan Kumar" value={newStudent.name}
+                onChange={e => setNewStudent(p => ({ ...p, name: e.target.value }))} className="rounded-xl" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Roll Number * <span className="text-slate-400">(alphanumeric, exactly 15)</span></Label>
+              <Input
+                placeholder="RA2211003010001"
+                value={newStudent.rollNumber}
+                maxLength={15}
+                onChange={e => {
+                  const v = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15).toUpperCase();
+                  setNewStudent(p => ({ ...p, rollNumber: v }));
+                }}
+                className="rounded-xl font-mono"
+              />
+              {newStudent.rollNumber && newStudent.rollNumber.length !== 15 && (
+                <p className="text-[11px] text-red-500">{newStudent.rollNumber.length}/15 characters</p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Email <span className="text-slate-400">(@srmist.edu.in only)</span></Label>
+              <Input
+                type="email"
+                placeholder="sahan@srmist.edu.in"
+                value={newStudent.email}
+                onChange={e => setNewStudent(p => ({ ...p, email: e.target.value.toLowerCase() }))}
+                className="rounded-xl"
+              />
+              {newStudent.email && !/^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i.test(newStudent.email) && (
+                <p className="text-[11px] text-red-500">Must be @srmist.edu.in</p>
+              )}
+            </div>
             {([
-              { label: 'Full Name *',   key: 'name',        placeholder: 'Sahan Kumar',     type: 'text'  },
-              { label: 'Roll Number *', key: 'rollNumber',  placeholder: 'RA2211003010001', type: 'text'  },
-              { label: 'Email',         key: 'email',       placeholder: 'sahan@srmist.edu.in',type: 'email' },
-              { label: 'Department',    key: 'department',  placeholder: 'Computer Science', type: 'text'  },
-              { label: 'Batch',         key: 'batch',       placeholder: '2024-2027',        type: 'text'  },
-              { label: 'Section',       key: 'section',     placeholder: 'A',                type: 'text'  },
+              { label: 'Department', key: 'department', placeholder: 'Computer Science' },
+              { label: 'Batch',      key: 'batch',      placeholder: '2024-2027'        },
+              { label: 'Section',    key: 'section',    placeholder: 'A'                },
             ] as const).map(f => (
               <div key={f.key} className="space-y-1">
                 <Label className="text-xs">{f.label}</Label>
-                <Input
-                  type={f.type}
-                  placeholder={f.placeholder}
-                  value={(newStudent as any)[f.key]}
-                  onChange={e => setNewStudent(p => ({ ...p, [f.key]: e.target.value }))}
-                  className="rounded-xl"
-                />
+                <Input placeholder={f.placeholder} value={(newStudent as any)[f.key]}
+                  onChange={e => setNewStudent(p => ({ ...p, [f.key]: e.target.value }))} className="rounded-xl" />
               </div>
             ))}
             <div className="space-y-1">
@@ -465,6 +564,79 @@ export default function StudentManagementPage() {
               className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               {addLoading ? 'Adding…' : 'Add Student'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Student Dialog ── */}
+      <Dialog open={!!editStudent} onOpenChange={open => { if (!open) { setEditStudent(null); setEditData(null); } }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Student — {editStudent?.name}</DialogTitle>
+            <DialogDescription>Update any field below. Roll number and email validations still apply.</DialogDescription>
+          </DialogHeader>
+          {editData && (
+            <div className="grid grid-cols-2 gap-4 py-2">
+              <div className="space-y-1 col-span-2">
+                <Label className="text-xs">Full Name *</Label>
+                <Input value={editData.name} onChange={e => setEditData((p: any) => ({ ...p, name: e.target.value }))} className="rounded-xl" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Roll Number <span className="text-slate-400">(alphanumeric, exactly 15)</span></Label>
+                <Input
+                  value={editData.rollNumber}
+                  maxLength={15}
+                  onChange={e => setEditData((p: any) => ({ ...p, rollNumber: e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15).toUpperCase() }))}
+                  className="rounded-xl font-mono"
+                />
+                {editData.rollNumber && editData.rollNumber.length !== 15 && (
+                  <p className="text-[11px] text-red-500">{editData.rollNumber.length}/15 characters</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Email <span className="text-slate-400">(@srmist.edu.in only)</span></Label>
+                <Input
+                  type="email"
+                  value={editData.email}
+                  onChange={e => setEditData((p: any) => ({ ...p, email: e.target.value.toLowerCase() }))}
+                  className="rounded-xl"
+                />
+                {editData.email && !/^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i.test(editData.email) && (
+                  <p className="text-[11px] text-red-500">Must be @srmist.edu.in</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Department</Label>
+                <Input value={editData.department} onChange={e => setEditData((p: any) => ({ ...p, department: e.target.value }))} className="rounded-xl" placeholder="Computer Science" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Batch</Label>
+                <Input value={editData.batch} onChange={e => setEditData((p: any) => ({ ...p, batch: e.target.value }))} className="rounded-xl" placeholder="2024-2027" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Section</Label>
+                <Input value={editData.section} onChange={e => setEditData((p: any) => ({ ...p, section: e.target.value }))} className="rounded-xl" placeholder="A" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Program</Label>
+                <select value={editData.program} onChange={e => setEditData((p: any) => ({ ...p, program: e.target.value }))} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                  <option value="">Select program</option>
+                  {PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Year of Study</Label>
+                <select value={editData.year} onChange={e => setEditData((p: any) => ({ ...p, year: parseInt(e.target.value) }))} className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                  {[1, 2, 3].map(y => <option key={y} value={y}>{y === 1 ? '1st' : y === 2 ? '2nd' : '3rd'} Year</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditStudent(null); setEditData(null); }} className="rounded-xl">Cancel</Button>
+            <Button onClick={handleEditSave} disabled={editLoading} className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white">
+              {editLoading ? 'Saving…' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -75,7 +75,7 @@ const SECTION_META = [
 
 function formatDate(iso: string) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  try { return new Intl.DateTimeFormat('en-GB').format(new Date(iso)); } catch { return '—'; }
 }
 
 function statusColor(status: string) {
@@ -102,9 +102,11 @@ export default function ScheduleExamPage() {
   const [sections, setSections] = useState({ technical: 15, aptitude: 10, reasoning: 10, verbal: 5 });
 
   // Schedule fields
-  const [examDate, setExamDate]         = useState('');
-  const [startTime, setStartTime]       = useState('');
-  const [durationMins, setDurationMins] = useState(60);
+  const [examDate,      setExamDate]      = useState('');
+  const [startTime,     setStartTime]     = useState('');
+  const [deadlineDate,  setDeadlineDate]  = useState('');
+  const [deadlineTime,  setDeadlineTime]  = useState('23:59');
+  const [durationMins,  setDurationMins]  = useState(60);
 
   // Target audience
   const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
@@ -285,6 +287,8 @@ export default function ScheduleExamPage() {
           description: `AI Placement Mock Test — ${subject.trim()} (${companyType})`,
           examDate,
           startTime,
+          deadlineDate,
+          deadlineTime,
           durationMins,
           shuffleQuestions: shuffleQ,
           shuffleOptions:   shuffleOpts,
@@ -679,6 +683,18 @@ export default function ScheduleExamPage() {
                     <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="rounded-xl border-slate-200" />
                   </div>
                   <div className="space-y-2">
+                    <Label className="text-slate-700 font-medium flex items-center gap-1.5">
+                      <Clock className="h-4 w-4 text-red-500" /> Deadline Date
+                    </Label>
+                    <Input type="date" value={deadlineDate} onChange={e => setDeadlineDate(e.target.value)} className="rounded-xl border-slate-200" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-slate-700 font-medium flex items-center gap-1.5">
+                      <Clock className="h-4 w-4 text-red-500" /> Deadline Time
+                    </Label>
+                    <Input type="time" value={deadlineTime} onChange={e => setDeadlineTime(e.target.value)} className="rounded-xl border-slate-200" />
+                  </div>
+                  <div className="space-y-2">
                     <Label className="text-slate-700 font-medium">Duration (mins) <span className="text-red-500">*</span></Label>
                     <Input
                       type="number" min={10} max={300}
@@ -811,18 +827,27 @@ export default function ScheduleExamPage() {
               <CardTitle className="text-base text-slate-800">Stats</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Total Exams Scheduled</span>
-                <span className="font-bold text-slate-800">{exams.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Published</span>
-                <span className="font-bold text-green-600">{exams.filter(e => e.status === 'published').length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Completed</span>
-                <span className="font-bold text-blue-600">{exams.filter(e => e.status === 'completed').length}</span>
-              </div>
+              {(() => {
+                const now = new Date();
+                const past    = exams.filter(e => e.examDate && new Date(e.examDate) < now);
+                const upcoming = exams.filter(e => !e.examDate || new Date(e.examDate) >= now);
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Total Tests</span>
+                      <span className="font-bold text-slate-800">{exams.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Upcoming</span>
+                      <span className="font-bold text-green-600">{upcoming.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Past (date elapsed)</span>
+                      <span className="font-bold text-blue-600">{past.length}</span>
+                    </div>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         </div>
@@ -855,6 +880,7 @@ export default function ScheduleExamPage() {
                     <th className="text-left px-4 py-3 text-slate-500 font-medium">Subject</th>
                     <th className="text-left px-4 py-3 text-slate-500 font-medium">Date</th>
                     <th className="text-left px-4 py-3 text-slate-500 font-medium">Time</th>
+                    <th className="text-left px-4 py-3 text-red-400 font-medium">Deadline</th>
                     <th className="text-center px-4 py-3 text-slate-500 font-medium">Duration</th>
                     <th className="text-center px-4 py-3 text-slate-500 font-medium">Questions</th>
                     <th className="text-center px-4 py-3 text-slate-500 font-medium">Status</th>
@@ -870,6 +896,7 @@ export default function ScheduleExamPage() {
                       <td className="px-4 py-3 text-slate-600">{exam.subject || '—'}</td>
                       <td className="px-4 py-3 text-slate-600">{exam.examDate ? formatDate(exam.examDate) : '—'}</td>
                       <td className="px-4 py-3 text-slate-600">{exam.startTime || '—'}</td>
+                      <td className="px-4 py-3 text-red-500 text-xs">{exam.deadlineDate ? `${formatDate(exam.deadlineDate)} ${exam.deadlineTime || ''}` : '—'}</td>
                       <td className="px-4 py-3 text-center text-slate-600">{exam.durationMins} min</td>
                       <td className="px-4 py-3 text-center font-medium text-slate-700">{exam.totalQuestions}</td>
                       <td className="px-4 py-3 text-center">

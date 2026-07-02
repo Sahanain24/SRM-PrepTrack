@@ -350,6 +350,43 @@ function ExamScreen({ examData, totalSeconds, onComplete }: {
     };
   }, [submitExam]);
 
+  // ── Calculator ────────────────────────────────────────────────────────────
+  const [calcOpen,    setCalcOpen]    = useState(false);
+  const [calcDisplay, setCalcDisplay] = useState('0');
+  const [calcPrev,    setCalcPrev]    = useState('');
+  const [calcOp,      setCalcOp]      = useState('');
+  const [calcFresh,   setCalcFresh]   = useState(true);
+
+  const calcPress = (val: string) => {
+    if (val === 'C') {
+      setCalcDisplay('0'); setCalcPrev(''); setCalcOp(''); setCalcFresh(true); return;
+    }
+    if (val === '⌫') {
+      setCalcDisplay(d => d.length > 1 ? d.slice(0, -1) : '0'); return;
+    }
+    if (['+', '−', '×', '÷'].includes(val)) {
+      setCalcPrev(calcDisplay); setCalcOp(val); setCalcFresh(true); return;
+    }
+    if (val === '=') {
+      if (!calcOp || !calcPrev) return;
+      const a = parseFloat(calcPrev), b = parseFloat(calcDisplay);
+      const res = calcOp === '+' ? a + b : calcOp === '−' ? a - b : calcOp === '×' ? a * b : b !== 0 ? a / b : 'Error';
+      setCalcDisplay(typeof res === 'number' ? parseFloat(res.toFixed(10)).toString() : 'Error');
+      setCalcPrev(''); setCalcOp(''); setCalcFresh(true); return;
+    }
+    if (val === '.' && calcDisplay.includes('.')) return;
+    setCalcDisplay(d => calcFresh ? (val === '.' ? '0.' : val) : (d === '0' && val !== '.' ? val : d + val));
+    setCalcFresh(false);
+  };
+
+  const CALC_KEYS = [
+    ['C', '⌫', '÷', '×'],
+    ['7', '8', '9', '−'],
+    ['4', '5', '6', '+'],
+    ['1', '2', '3', '='],
+    ['.', '0'],
+  ];
+
   const warn    = timeLeft <= 60;
   const timePct = (timeLeft / totalSeconds) * 100;
 
@@ -455,6 +492,54 @@ function ExamScreen({ examData, totalSeconds, onComplete }: {
                 <p className="text-xs text-center text-slate-500">{answered} of {examData.questions.length} answered</p>
               </div>
             </CardContent>
+          </Card>
+
+          {/* Calculator */}
+          <Card className="border-slate-200 shadow-sm mt-3">
+            <button
+              type="button"
+              onClick={() => setCalcOpen(o => !o)}
+              className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-colors"
+            >
+              <span className="flex items-center gap-2">🧮 Calculator</span>
+              <span className="text-slate-400 text-xs">{calcOpen ? '▲' : '▼'}</span>
+            </button>
+            {calcOpen && (
+              <CardContent className="pt-0 pb-3 px-3">
+                {/* Display */}
+                <div className="bg-slate-900 text-white rounded-xl px-4 py-3 mb-3 text-right">
+                  {calcOp && <p className="text-[10px] text-slate-400">{calcPrev} {calcOp}</p>}
+                  <p className="text-2xl font-mono font-bold tracking-tight overflow-hidden text-ellipsis">{calcDisplay}</p>
+                </div>
+                {/* Keys */}
+                <div className="space-y-1.5">
+                  {CALC_KEYS.map((row, ri) => (
+                    <div key={ri} className="flex gap-1.5">
+                      {row.map(k => {
+                        const isOp  = ['+', '−', '×', '÷'].includes(k);
+                        const isEq  = k === '=';
+                        const isCl  = k === 'C';
+                        const isWide = row.length < 4;
+                        return (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => calcPress(k)}
+                            className={`${isWide ? 'flex-1' : 'flex-1'} py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95
+                              ${isCl  ? 'bg-red-100 text-red-700 hover:bg-red-200' :
+                                isEq  ? 'bg-orange-500 text-white hover:bg-orange-600' :
+                                isOp  ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' :
+                                        'bg-slate-100 text-slate-800 hover:bg-slate-200'}`}
+                          >
+                            {k}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            )}
           </Card>
         </div>
       </div>

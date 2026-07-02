@@ -27,7 +27,7 @@ interface Exam {
 
 function formatDate(iso: string) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  try { return new Intl.DateTimeFormat('en-GB').format(new Date(iso)); } catch { return '—'; }
 }
 
 function statusColor(s: string) {

@@ -9,6 +9,8 @@ const ExamSchema = new mongoose.Schema({
   examDate:     { type: String },  // 'YYYY-MM-DD'
   startTime:    { type: String },  // 'HH:MM'
   endTime:      { type: String },
+  deadlineDate: { type: String },  // 'YYYY-MM-DD' — last day students can attempt
+  deadlineTime: { type: String },  // 'HH:MM'
   durationMins: { type: Number, required: true },
 
   totalQuestions: { type: Number },

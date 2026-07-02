@@ -4,8 +4,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'SRM Study Buddy - Your AI-Powered Learning Companion',
-  description: 'Track study sessions, practice coding, and improve communication with AI feedback.',
+  title: 'SRM PrepTrack — Track your Prep. Crack your Placement.',
+  description: 'Track your Prep. Crack your Placement. AI-powered exams, aptitude practice, coding challenges and placement readiness for SRM students.',
 };
 
 export const viewport: Viewport = {

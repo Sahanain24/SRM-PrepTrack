@@ -166,7 +166,7 @@ export default function StudyHub() {
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="font-headline text-xl">{log.title}</CardTitle>
-                    <CardDescription>{log.subject} • {format(new Date(log.date), 'PP')}</CardDescription>
+                    <CardDescription>{log.subject} • {format(new Date(log.date), 'dd/MM/yyyy')}</CardDescription>
                   </div>
                   <Button variant="ghost" size="icon" onClick={() => deleteLog(log._id || log.id || '')}>
                     <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />

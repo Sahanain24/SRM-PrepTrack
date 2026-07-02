@@ -51,7 +51,7 @@ function StarRating({ value, onChange }: { value: number; onChange?: (v: number)
 }
 
 function fmtDt(iso: string) {
-  return new Date(iso).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));
 }
 
 export default function TeacherSessionDetail({ params }: { params: Promise<{ sessionId: string }> }) {
@@ -299,7 +299,7 @@ export default function TeacherSessionDetail({ params }: { params: Promise<{ ses
                       : <Circle className="h-4 w-4 text-slate-300 mt-0.5 flex-shrink-0" />}
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm ${item.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{item.text}</p>
-                      {item.dueDate && <p className="text-[10px] text-slate-400">Due: {new Date(item.dueDate).toLocaleDateString('en-IN')}</p>}
+                      {item.dueDate && <p className="text-[10px] text-slate-400">Due: {new Intl.DateTimeFormat('en-GB').format(new Date(item.dueDate))}</p>}
                     </div>
                     <button onClick={() => removeActionItem(item._id)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all flex-shrink-0">
                       <Trash2 className="h-3.5 w-3.5" />

@@ -38,7 +38,7 @@ function StarRating({ value, onChange }: { value: number; onChange?: (v: number)
 }
 
 function fmtDt(iso: string) {
-  return new Date(iso).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));
 }
 
 export default function StudentSessionDetail({ params }: { params: Promise<{ sessionId: string }> }) {
@@ -208,7 +208,7 @@ export default function StudentSessionDetail({ params }: { params: Promise<{ ses
                 </button>
                 <div>
                   <p className={`text-sm ${item.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{item.text}</p>
-                  {item.dueDate && <p className="text-[10px] text-slate-400">Due: {new Date(item.dueDate).toLocaleDateString('en-IN')}</p>}
+                  {item.dueDate && <p className="text-[10px] text-slate-400">Due: {new Intl.DateTimeFormat('en-GB').format(new Date(item.dueDate))}</p>}
                 </div>
               </div>
             ))}

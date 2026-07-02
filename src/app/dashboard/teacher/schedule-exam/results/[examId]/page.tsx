@@ -62,8 +62,10 @@ interface ExamInfo {
   totalMarks: number;
   passingMarks: number;
   durationMins: number;
-  examDate: string;
-  startTime: string;
+  examDate:     string;
+  startTime:    string;
+  deadlineDate: string;
+  deadlineTime: string;
   reAttemptPermissions: ReAttemptPermission[];
 }
 
@@ -75,13 +77,11 @@ function fmt(secs: number) {
 }
 
 function shortDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  try { return new Intl.DateTimeFormat('en-GB').format(new Date(iso)); } catch { return '—'; }
 }
 
 function shortDateTime(iso: string) {
-  return new Date(iso).toLocaleString('en-IN', {
-    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-  });
+  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));
 }
 
 const SECTIONS = ['technical', 'aptitude', 'reasoning', 'verbal'] as const;
@@ -709,8 +709,13 @@ export default function ExamResultsPage({ params }: { params: Promise<{ examId: 
           <h1 className="text-2xl font-bold text-slate-900 truncate">{exam?.title || 'Exam Results'}</h1>
           <p className="text-slate-500 text-sm mt-0.5">
             {exam?.subject && <span className="mr-3">{exam.subject}</span>}
-            {exam?.examDate && <span>{exam.examDate}</span>}
-            {exam?.startTime && <span className="ml-2">{exam.startTime}</span>}
+            {exam?.examDate && <span>📅 {new Intl.DateTimeFormat('en-GB').format(new Date(exam.examDate))}</span>}
+            {exam?.startTime && <span className="ml-2">🕐 {exam.startTime}</span>}
+            {exam?.deadlineDate && (
+              <span className="ml-3 text-red-500">
+                ⏰ Deadline: {new Intl.DateTimeFormat('en-GB').format(new Date(exam.deadlineDate))} {exam.deadlineTime || ''}
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">

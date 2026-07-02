@@ -114,7 +114,7 @@ export default function AuditLogsPage() {
                   logs.map(log => (
                     <TableRow key={log._id}>
                       <TableCell className="text-sm text-slate-500 whitespace-nowrap">
-                        {log.timestamp ? format(new Date(log.timestamp), 'MMM d, yyyy HH:mm:ss') : '—'}
+                        {log.timestamp ? format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm:ss') : '—'}
                       </TableCell>
                       <TableCell className="font-medium text-slate-900">{log.userName || 'System'}</TableCell>
                       <TableCell>

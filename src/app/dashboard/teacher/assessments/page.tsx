@@ -267,7 +267,7 @@ export default function AssessmentsPage() {
                       {a.sectionA?.careerAspiration}
                     </TableCell>
                     <TableCell className="text-xs text-slate-400">
-                      {a.submittedAt ? format(new Date(a.submittedAt), 'PP') : '—'}
+                      {a.submittedAt ? format(new Date(a.submittedAt), 'dd/MM/yyyy') : '—'}
                     </TableCell>
                     <TableCell>
                       <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -289,7 +289,7 @@ export default function AssessmentsPage() {
                 <DialogTitle className="text-xl font-headline">{selected.studentName}</DialogTitle>
                 <DialogDescription>
                   {selected.rollNumber} · {selected.sectionA?.program} · Year {selected.sectionA?.yearOfStudy}
-                  {selected.submittedAt && ` · Submitted ${format(new Date(selected.submittedAt), 'PPP')}`}
+                  {selected.submittedAt && ` · Submitted ${format(new Date(selected.submittedAt), 'dd/MM/yyyy')}`}
                 </DialogDescription>
               </DialogHeader>
 

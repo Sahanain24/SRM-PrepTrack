@@ -92,87 +92,97 @@ export default function DeanDashboard() {
     finally { setLoading(false); }
   };
 
-  const downloadReport = () => {
+  const downloadReport = async () => {
     const wb = XLSX.utils.book_new();
 
-    // Summary sheet
+    // Fetch AI test results for student-level sheet
+    let examResults: any[] = [];
+    try {
+      const res = await fetch('/api/exam-results');
+      const data = await res.json();
+      examResults = Array.isArray(data) ? data : [];
+    } catch { /* non-fatal */ }
+
+    // Sheet 1: Summary
     const sumRows = [
       ['SRM Academic Excellence Platform — Strategic Report'],
-      [`Generated: ${format(new Date(), 'PPP p')}`], [],
+      [`Generated: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`], [],
       ['Metric', 'Value'],
-      ['Total Students',          summary?.totalStudents    ?? 0],
-      ['Self-Assessments Done',   summary?.totalAssessed    ?? 0],
-      ['Completion Rate (%)',     summary?.completionRate   ?? 0],
-      ['Exam Avg — First Attempt (%)', perf?.overview?.examAvgFirstAttempt ?? 0],
-      ['Exam Avg — All Attempts (%)',  perf?.overview?.examAvgAll ?? 0],
-      ['Exam Pass Rate (%)',      perf?.overview?.examPassRate ?? 0],
-      ['Coding Test Avg (%)',     perf?.overview?.codingAvg ?? 0],
-      ['Coding Test Submissions', perf?.overview?.codingTotalSubmissions ?? 0],
+      ['Total Students',               summary?.totalStudents            ?? 0],
+      ['Self-Assessments Done',        summary?.totalAssessed            ?? 0],
+      ['Completion Rate (%)',          summary?.completionRate            ?? 0],
+      ['AI Test Avg — All Attempts (%)', perf?.overview?.examAvgAll       ?? 0],
+      ['AI Test Avg — First Attempt (%)', perf?.overview?.examAvgFirstAttempt ?? 0],
+      ['Total AI Test Attempts',       perf?.overview?.examTotalAttempts  ?? 0],
+      ['Students Attempted AI Tests',  perf?.overview?.studentsAttempted  ?? 0],
+      ['Coding Test Avg (%)',          perf?.overview?.codingAvg          ?? 0],
+      ['Coding Test Submissions',      perf?.overview?.codingTotalSubmissions ?? 0],
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sumRows), 'Summary');
 
-    // Program-wise performance
+    // Sheet 2: Student-wise AI Test Results
+    if (examResults.length > 0) {
+      const erRows = [['Student Name', 'Exam Title', 'Subject', 'Score', 'Total', 'Percentage (%)', 'Time (sec)', 'First Attempt', 'Date']];
+      examResults.forEach((r: any) => erRows.push([
+        r.userName, r.courseName, r.subjectName || '—',
+        r.score, r.total, Math.round(r.percentage || 0), r.timeTaken || 0,
+        r.isFirstAttempt ? 'Yes' : 'No',
+        r.date ? format(new Date(r.date), 'dd/MM/yyyy') : '—',
+      ]));
+      const wsEr = XLSX.utils.aoa_to_sheet(erRows);
+      wsEr['!cols'] = [22, 32, 20, 8, 8, 16, 12, 14, 14].map(w => ({ wch: w }));
+      XLSX.utils.book_append_sheet(wb, wsEr, 'AI Test Results');
+    }
+
+    // Sheet 3: Program-wise performance
     const progRows = [['Program', 'Students', 'Exam Avg (%)', 'Exam Attempts', 'Coding Avg (%)', 'Coding Submissions']];
     (perf?.byProgram || []).forEach((p: any) => progRows.push([
       p.program, p.students, p.examAvg, p.examAttempts, p.codingAvg, p.codingSubmissions,
     ]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(progRows), 'Program Performance');
 
-    // Batch-wise performance
+    // Sheet 4: Batch-wise performance
     const batchRows = [['Batch', 'Students', 'Exam Avg (%)', 'Exam Attempts', 'Coding Avg (%)', 'Coding Submissions']];
     (perf?.byBatch || []).forEach((b: any) => batchRows.push([
       b.batch, b.students, b.examAvg, b.examAttempts, b.codingAvg, b.codingSubmissions,
     ]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(batchRows), 'Batch Performance');
 
-    // Section-wise performance
-    const sectionRows = [['Program', 'Year', 'Section', 'Students', 'Exam Avg (%)', 'Coding Avg (%)']];
+    // Sheet 5: Section-wise performance
+    const sectionRows = [['Program', 'Year', 'Section', 'Students', 'Exam Avg (%)', 'Exam Attempts', 'Coding Avg (%)', 'Coding Submissions']];
     (perf?.bySection || []).forEach((sec: any) => sectionRows.push([
-      sec.program, sec.year, sec.section, sec.students, sec.examAvg, sec.codingAvg,
+      sec.program, sec.year, sec.section, sec.students, sec.examAvg, sec.examAttempts, sec.codingAvg, sec.codingSubmissions,
     ]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sectionRows), 'Section Performance');
 
-    // Attempt-wise comparison
-    const attemptRows = [['Attempt #', 'Avg Score (%)', 'Attempts Recorded']];
+    // Sheet 6: Attempt-wise comparison
+    const attemptRows = [['Attempt #', 'Avg Score (%)', 'Records']];
     (perf?.attemptComparison || []).forEach((a: any) => attemptRows.push([a.attempt, a.avgPercentage, a.count]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(attemptRows), 'Attempt Comparison');
 
-    // Coding tests summary
-    const ctRows = [['Title', 'Teacher', 'Problems', 'Duration (min)', 'Target Programs', 'Target Years', 'Target Sections', 'Scheduled Date']];
+    // Sheet 7: Coding tests
+    const ctRows = [['Title', 'Teacher', 'Problems', 'Duration (min)', 'Target Programs', 'Target Years', 'Scheduled Date']];
     codingTests.forEach((t: any) => ctRows.push([
       t.title, t.teacherName || '—', (t.problems || []).length, t.durationMins,
       (t.targetPrograms || []).join(', ') || 'All',
-      (t.targetYears || []).join(', ') || 'All',
-      (t.targetSections || []).join(', ') || 'All',
+      (t.targetYears    || []).join(', ') || 'All',
       t.examDate || '—',
     ]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ctRows), 'Coding Tests');
 
-    // Skill heatmap
+    // Sheet 8: Skill heatmap
     const hRows = [['Program', ...SKILL_KEYS.map(s => s.label), 'Students']];
     heatmap.forEach((row: any) => hRows.push([
       row._id, ...SKILL_KEYS.map(s => +(row[s.key] || 0).toFixed(2)), row.count,
     ]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hRows), 'Skill Heatmap');
 
-    // Training demand
+    // Sheet 9: Training demand
     const trainRows = [['Training Type', 'Demand Count']];
     training.forEach(t => trainRows.push([t._id, t.count]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(trainRows), 'Training Demand');
 
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-    const buf   = new ArrayBuffer(wbout.length);
-    const view  = new Uint8Array(buf);
-    for (let i = 0; i < wbout.length; i++) view[i] = wbout.charCodeAt(i) & 0xff;
-    const blob = new Blob([buf], { type: 'application/octet-stream' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `SRM_Strategic_Report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    XLSX.writeFile(wb, `SRM_Strategic_Report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   if (loading) return (
@@ -207,7 +217,6 @@ export default function DeanDashboard() {
           { label: 'Assessments Done',   value: summary?.totalAssessed    ?? 0,        icon: CheckCircle2, color: 'text-green-600 bg-green-50' },
           { label: 'Completion Rate',    value: `${summary?.completionRate ?? 0}%`,    icon: Target,       color: 'text-indigo-600 bg-indigo-50' },
           { label: 'Exam Avg (1st try)', value: `${perf?.overview?.examAvgFirstAttempt ?? 0}%`, icon: Trophy, color: 'text-amber-600 bg-amber-50' },
-          { label: 'Exam Pass Rate',     value: `${perf?.overview?.examPassRate  ?? 0}%`,     icon: LineChart, color: 'text-rose-600 bg-rose-50' },
           { label: 'Coding Test Avg',    value: `${perf?.overview?.codingAvg ?? 0}%`,  icon: Code2,        color: 'text-emerald-600 bg-emerald-50' },
         ].map(s => (
           <Card key={s.label} className="border-slate-200 shadow-sm">
@@ -313,7 +322,7 @@ export default function DeanDashboard() {
                   <tbody>
                     {perf.byBatch.map((b: any) => (
                       <tr key={b.batch} className="border-b border-slate-50">
-                        <td className="py-2 px-2 font-semibold text-slate-700">{b.batch}</td>
+                        <td className="py-2 px-2 font-semibold text-slate-700">{b.batch || '—'}</td>
                         <td className="py-2 px-2 text-center text-slate-500">{b.students}</td>
                         <td className="py-2 px-2 w-32"><Bar value={b.examAvg} /></td>
                         <td className="py-2 px-2 w-32"><Bar value={b.codingAvg} /></td>
@@ -349,7 +358,9 @@ export default function DeanDashboard() {
                   <tbody>
                     {perf.bySection.map((sec: any, i: number) => (
                       <tr key={i} className="border-b border-slate-50">
-                        <td className="py-2 px-2 font-semibold text-slate-700">{sec.program} Y{sec.year} §{sec.section}</td>
+                        <td className="py-2 px-2 font-semibold text-slate-700">
+                          {sec.program || '—'}{sec.year && sec.year !== '—' ? ` Y${sec.year}` : ''}{sec.section ? ` §${sec.section}` : ''}
+                        </td>
                         <td className="py-2 px-2 text-center text-slate-500">{sec.students}</td>
                         <td className="py-2 px-2 w-32"><Bar value={sec.examAvg} /></td>
                         <td className="py-2 px-2 w-32"><Bar value={sec.codingAvg} /></td>

@@ -31,6 +31,14 @@ const ROLES = [
   { value: 'admin',       label: 'Administrator' },
 ];
 
+const ROLE_EMAILS: Record<string, string> = {
+  hod:          'hod@srmist.edu.in',
+  dean:         'dean@srmist.edu.in',
+  deputy_dean:  'deputydean@srmist.edu.in',
+  pro_vc:       'provc@srmist.edu.in',
+  admin:        'admin@srmist.edu.in',
+};
+
 interface Staff {
   _id: string;
   name: string;
@@ -41,6 +49,7 @@ interface Staff {
 }
 
 const BLANK_STAFF = { name: '', email: '', role: 'teacher', department: '' };
+const blankWithRole = (role: string) => ({ name: '', email: ROLE_EMAILS[role] ?? '', role, department: '' });
 
 export default function StaffManagementPage() {
   const router = useRouter();
@@ -77,9 +86,16 @@ export default function StaffManagementPage() {
     loadStaff();
   }, [loadStaff]);
 
+  const FSH_ROLES = ['hod', 'dean', 'deputy_dean', 'pro_vc', 'admin'];
+
   const handleAddStaff = async () => {
-    if (!newStaff.name.trim() || !newStaff.email.trim()) {
+    const email = newStaff.email.trim().toLowerCase();
+    if (!newStaff.name.trim() || !email) {
       toast({ title: 'Name and email are required', variant: 'destructive' });
+      return;
+    }
+    if (!/^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i.test(email)) {
+      toast({ title: 'Email must be a valid @srmist.edu.in address', variant: 'destructive' });
       return;
     }
     setAddLoading(true);
@@ -302,29 +318,41 @@ export default function StaffManagementPage() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-2">
             <div className="space-y-1 col-span-2">
-              <Label className="text-xs">Full Name *</Label>
+              <Label className="text-xs">
+                Full Name *
+                {FSH_ROLES.includes(newStaff.role) && (
+                  <span className="ml-1 text-slate-400">("FSH" will be appended automatically)</span>
+                )}
+              </Label>
               <Input
-                placeholder="Dr. Anitha Rao"
+                placeholder={FSH_ROLES.includes(newStaff.role) ? `HOD FSH` : 'Dr. Anitha Rao'}
                 value={newStaff.name}
                 onChange={e => setNewStaff(p => ({ ...p, name: e.target.value }))}
                 className="rounded-xl"
               />
             </div>
             <div className="space-y-1 col-span-2">
-              <Label className="text-xs">Email *</Label>
+              <Label className="text-xs">Email * <span className="text-slate-400">(@srmist.edu.in only)</span></Label>
               <Input
                 type="email"
                 placeholder="anitha.rao@srmist.edu.in"
                 value={newStaff.email}
-                onChange={e => setNewStaff(p => ({ ...p, email: e.target.value }))}
-                className="rounded-xl"
+                readOnly={!!ROLE_EMAILS[newStaff.role]}
+                onChange={e => setNewStaff(p => ({ ...p, email: e.target.value.toLowerCase() }))}
+                className={`rounded-xl ${ROLE_EMAILS[newStaff.role] ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`}
               />
+              {newStaff.email && !/^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i.test(newStaff.email) && (
+                <p className="text-[11px] text-red-500">Must be @srmist.edu.in</p>
+              )}
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Role</Label>
               <select
                 value={newStaff.role}
-                onChange={e => setNewStaff(p => ({ ...p, role: e.target.value }))}
+                onChange={e => {
+                  const role = e.target.value;
+                  setNewStaff(p => ({ ...p, role, email: ROLE_EMAILS[role] ?? p.email }));
+                }}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm"
               >
                 {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}

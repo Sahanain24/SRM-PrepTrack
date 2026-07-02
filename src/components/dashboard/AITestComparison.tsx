@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Sparkles, TrendingUp, TrendingDown, Minus,
-  Loader2, RefreshCw, ArrowRight, CalendarDays,
+  Loader2, RefreshCw, ArrowRight, CalendarDays, Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -31,7 +32,7 @@ interface ComparisonRow {
 
 function fmt(d: string) {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  try { return new Intl.DateTimeFormat('en-GB').format(new Date(d)); } catch { return '—'; }
 }
 
 function ScorePill({ pct }: { pct: number }) {
@@ -67,6 +68,7 @@ function ImprovementBadge({ delta }: { delta: number }) {
 export function AITestComparison() {
   const [rows, setRows]       = useState<ComparisonRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -83,9 +85,14 @@ export function AITestComparison() {
 
   useEffect(() => { load(); }, []);
 
-  const improved  = rows.filter(r => r.improvement > 0).length;
-  const declined  = rows.filter(r => r.improvement < 0).length;
-  const unchanged = rows.filter(r => r.improvement === 0 && r.latest).length;
+  const q = search.toLowerCase().trim();
+  const visibleRows = q
+    ? rows.filter(r => r.userName?.toLowerCase().includes(q) || r.rollNumber?.toLowerCase().includes(q))
+    : rows;
+
+  const improved      = rows.filter(r => r.improvement > 0).length;
+  const declined      = rows.filter(r => r.improvement < 0).length;
+  const unchanged     = rows.filter(r => r.improvement === 0 && r.latest).length;
   const singleAttempt = rows.filter(r => !r.latest).length;
 
   return (
@@ -103,9 +110,20 @@ export function AITestComparison() {
               </CardDescription>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={load} disabled={loading} className="rounded-xl gap-1.5 text-xs">
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                placeholder="Search student…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-8 h-8 w-44 rounded-xl text-xs"
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading} className="rounded-xl gap-1.5 text-xs">
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Summary pills */}
@@ -138,6 +156,10 @@ export function AITestComparison() {
           </div>
         ) : (
           <div className="overflow-x-auto">
+            {q && visibleRows.length === 0 && (
+              <p className="text-center py-6 text-sm text-slate-400">No students match "{search}".</p>
+            )}
+            {visibleRows.length > 0 && (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100">
@@ -150,7 +172,7 @@ export function AITestComparison() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {rows.map(row => (
+                {visibleRows.map(row => (
                   <tr key={row.userId} className="hover:bg-slate-50/60 transition-colors group">
                     {/* Student name */}
                     <td className="py-3 px-3">
@@ -226,6 +248,7 @@ export function AITestComparison() {
                 ))}
               </tbody>
             </table>
+            )}
           </div>
         )}
       </CardContent>
