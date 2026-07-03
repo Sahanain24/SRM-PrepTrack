@@ -27,12 +27,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-const ROLL_RE  = /^[a-zA-Z0-9]{15}$/;
+const ROLL_RE  = /^\d{4}-\d{4}$/;
 const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i;
 
 function validateStudent(name: string, roll: string, email: string): string | null {
   if (!name || !roll) return 'Name and roll number are required';
-  if (!ROLL_RE.test(roll)) return `Roll number "${roll}" must be exactly 15 alphanumeric characters`;
+  if (!ROLL_RE.test(roll)) return `Registration number must be in XXXX-XXXX format (e.g. 1234-5678)`;
   if (email && !EMAIL_RE.test(email)) return `Email "${email}" must be a valid @srmist.edu.in address`;
   return null;
 }

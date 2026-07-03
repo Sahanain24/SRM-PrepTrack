@@ -491,7 +491,7 @@ export default function StudentManagementPage() {
             <div className="space-y-1">
               <Label className="text-xs">Roll Number * <span className="text-slate-400">(alphanumeric, exactly 15)</span></Label>
               <Input
-                placeholder="RA2211003010001"
+                placeholder="RA2532242020001"
                 value={newStudent.rollNumber}
                 maxLength={15}
                 onChange={e => {

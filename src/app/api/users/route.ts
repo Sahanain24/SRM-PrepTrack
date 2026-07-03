@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const role = searchParams.get('role');
 
-    const query: any = { isActive: { $ne: false } };
+    const query: any = { isActive: true };
     if (role === 'teacher') {
       query.role = 'teacher';
     } else if (role === 'student') {

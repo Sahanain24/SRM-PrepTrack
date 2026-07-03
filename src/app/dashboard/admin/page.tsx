@@ -8,9 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { getCurrentUser } from '@/lib/mock-db';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Users, UserCog, ShieldCheck, ShieldAlert, ClipboardList,
-  RefreshCw, History, ArrowRight, Loader2, BarChart2, LineChart,
+  RefreshCw, History, ArrowRight, Loader2, BarChart2, LineChart, Wrench, Trash2,
 } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -25,9 +30,39 @@ const ROLE_LABELS: Record<string, string> = {
 
 export default function AdminOverviewPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [data, setData]       = useState<any>(null);
   const [perf, setPerf]       = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Maintenance — keep first attempt only
+  const [maintOpen, setMaintOpen]         = useState(false);
+  const [maintSearch, setMaintSearch]     = useState('Data Structure');
+  const [maintRunning, setMaintRunning]   = useState(false);
+  const [maintResult, setMaintResult]     = useState<any>(null);
+
+  const runKeepFirstAttempt = async () => {
+    setMaintRunning(true);
+    setMaintResult(null);
+    try {
+      const res = await fetch('/api/admin/maintenance/keep-first-attempts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titleSearch: maintSearch.trim() }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      setMaintResult(result);
+      toast({
+        title: 'Cleanup complete',
+        description: `Removed ${result.totalDeleted} extra attempt(s) across ${result.examsProcessed} exam(s).`,
+      });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setMaintRunning(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -202,6 +237,91 @@ export default function AdminOverviewPage() {
           ))}
         </CardContent>
       </Card>
+
+      {/* ── Maintenance ── */}
+      <Card className="border-red-200 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-red-700 flex items-center gap-2">
+            <Wrench className="h-5 w-5" /> Maintenance
+          </CardTitle>
+          <CardDescription>One-time data cleanup operations. Use with caution — these actions are irreversible.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between p-4 rounded-xl border border-red-100 bg-red-50">
+            <div>
+              <p className="font-medium text-slate-800 text-sm">Remove Extra Attempts (Keep Attempt 1 Only)</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Find exams by title and delete attempts 2, 3, … for every student — keeping only their first attempt.
+                Use this to clear demo data before analysing real student performance.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { setMaintResult(null); setMaintOpen(true); }}
+              className="ml-4 flex-shrink-0 rounded-xl border-red-300 text-red-600 hover:bg-red-100 gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Run Cleanup
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Maintenance dialog */}
+      <Dialog open={maintOpen} onOpenChange={open => { if (!maintRunning) setMaintOpen(open); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <Wrench className="h-5 w-5" /> Keep Attempt 1 Only
+            </DialogTitle>
+            <DialogDescription>
+              All exams whose title contains the search term will be processed. Attempts 2, 3, and beyond will be permanently deleted for every student. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Exam Title Search</label>
+              <Input
+                value={maintSearch}
+                onChange={e => setMaintSearch(e.target.value)}
+                placeholder="e.g. Data Structure"
+                className="rounded-xl"
+                disabled={maintRunning}
+              />
+              <p className="text-xs text-slate-400">Case-insensitive partial match — e.g. "data structure" matches "Data Structures Placement Mock Test".</p>
+            </div>
+
+            {maintResult && (
+              <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-sm space-y-1">
+                <p className="font-semibold text-green-700">Cleanup complete</p>
+                <p className="text-slate-600">Exams processed: <strong>{maintResult.examsProcessed}</strong></p>
+                <p className="text-slate-600">Extra attempts deleted: <strong>{maintResult.totalDeleted}</strong></p>
+                {maintResult.summary?.map((s: any) => (
+                  <p key={s.examId} className="text-xs text-slate-500">• {s.title} — {s.deleted} deleted</p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setMaintOpen(false)} disabled={maintRunning} className="rounded-xl">
+              {maintResult ? 'Close' : 'Cancel'}
+            </Button>
+            {!maintResult && (
+              <Button
+                onClick={runKeepFirstAttempt}
+                disabled={maintRunning || !maintSearch.trim()}
+                className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
+              >
+                {maintRunning
+                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running…</>
+                  : <><Trash2 className="h-4 w-4 mr-2" /> Delete Extra Attempts</>}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

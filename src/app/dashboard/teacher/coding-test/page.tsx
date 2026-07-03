@@ -91,6 +91,9 @@ export default function TeacherCodingTestPage() {
   const toggleSection = (s: string) =>
     setSelectedSections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
+  const toggleAllSections = () =>
+    setSelectedSections(prev => prev.length === SECTIONS.length ? [] : [...SECTIONS]);
+
   const updateProblem = (idx: number, patch: Partial<Problem>) =>
     setProblems(prev => prev.map((p, i) => i === idx ? { ...p, ...patch } : p));
 
@@ -297,8 +300,14 @@ export default function TeacherCodingTestPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 mb-2">Sections (leave empty for all sections)</p>
+                  <p className="text-xs font-medium text-slate-500 mb-2">Sections</p>
                   <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={toggleAllSections}
+                      className={`px-3 py-1 rounded-full text-sm font-medium border transition-all ${
+                        selectedSections.length === SECTIONS.length
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-400'
+                      }`}>All</button>
                     {SECTIONS.map(s => (
                       <button type="button" key={s} onClick={() => toggleSection(s)}
                         className={`w-9 h-9 rounded-xl text-sm font-bold border transition-all ${

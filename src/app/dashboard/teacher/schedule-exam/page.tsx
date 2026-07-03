@@ -54,6 +54,7 @@ interface ScheduledExam {
 
 const PROGRAMS   = ['BCA', 'BCA(DS)', 'BCom', 'MSc(ADS)', 'MCom', 'MCA', 'MCA GenAI'];
 const YEARS      = [1, 2, 3, 4];
+const SECTIONS   = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const DIFFICULTIES = [
   { value: 'easy',   label: 'Easy' },
   { value: 'medium', label: 'Medium' },
@@ -93,10 +94,10 @@ export default function ScheduleExamPage() {
   const [loadingData, setLoadingData] = useState(true);
 
   // Core fields
-  const [subject, setSubject]         = useState('');
-  const [difficulty, setDifficulty]   = useState('medium');
-  const [companyType, setCompanyType] = useState('any');
-  const [customTitle, setCustomTitle] = useState('');
+  const [subjectPrompt, setSubjectPrompt] = useState('');
+  const [difficulty, setDifficulty]       = useState('medium');
+  const [companyType, setCompanyType]     = useState('any');
+  const [customTitle, setCustomTitle]     = useState('');
 
   // Section distribution
   const [sections, setSections] = useState({ technical: 15, aptitude: 10, reasoning: 10, verbal: 5 });
@@ -109,8 +110,9 @@ export default function ScheduleExamPage() {
   const [durationMins,  setDurationMins]  = useState(60);
 
   // Target audience
-  const [selectedPrograms, setSelectedPrograms] = useState<string[]>([]);
-  const [selectedYears, setSelectedYears]       = useState<number[]>([]);
+  const [selectedPrograms, setSelectedPrograms]   = useState<string[]>([]);
+  const [selectedYears, setSelectedYears]         = useState<number[]>([]);
+  const [selectedSections, setSelectedSections]   = useState<string[]>([]);
 
   // Options
   const [shuffleQ, setShuffleQ]       = useState(true);
@@ -180,10 +182,16 @@ export default function ScheduleExamPage() {
   const toggleYear = (y: number) =>
     setSelectedYears(prev => prev.includes(y) ? prev.filter(x => x !== y) : [...prev, y]);
 
+  const toggleSection = (s: string) =>
+    setSelectedSections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+
+  const toggleAllSections = () =>
+    setSelectedSections(prev => prev.length === SECTIONS.length ? [] : [...SECTIONS]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject.trim()) {
-      toast({ title: 'Missing subject', description: 'Enter the technical subject for this exam.', variant: 'destructive' });
+    if (!subjectPrompt.trim()) {
+      toast({ title: 'Missing subject', description: 'Enter the subject or prompt for this exam.', variant: 'destructive' });
       return;
     }
     if (totalQuestions < 5) {
@@ -205,7 +213,7 @@ export default function ScheduleExamPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subject: subject.trim(),
+          subject: subjectPrompt.trim(),
           difficulty,
           sections: { technical: sections.technical, aptitude: sections.aptitude, reasoning: sections.reasoning, verbal: sections.verbal },
           companyType,
@@ -283,8 +291,8 @@ export default function ScheduleExamPage() {
         body: JSON.stringify({
           teacherId,
           title:       reviewTitle,
-          subject:     subject.trim(),
-          description: `AI Placement Mock Test — ${subject.trim()} (${companyType})`,
+          subject:     subjectPrompt.trim(),
+          description: `AI Placement Mock Test (${companyType})`,
           examDate,
           startTime,
           deadlineDate,
@@ -295,6 +303,7 @@ export default function ScheduleExamPage() {
           showResultImmediately: true,
           targetPrograms: selectedPrograms,
           targetYears:    selectedYears,
+          targetBatches:  selectedSections,
           questions: reviewQuestions,
         }),
       });
@@ -308,7 +317,7 @@ export default function ScheduleExamPage() {
       // Reset form + review
       setReviewQuestions(null);
       setReviewTitle('');
-      setSubject('');
+      setSubjectPrompt('');
       setCustomTitle('');
       setSections({ technical: 15, aptitude: 10, reasoning: 10, verbal: 5 });
       setCompanyType('any');
@@ -318,6 +327,7 @@ export default function ScheduleExamPage() {
       setDurationMins(60);
       setSelectedPrograms([]);
       setSelectedYears([]);
+      setSelectedSections([]);
 
       // Refresh list
       const eRes = await fetch(`/api/exams/ai-schedule?teacherId=${teacherId}`);
@@ -551,32 +561,32 @@ export default function ScheduleExamPage() {
                 <CardTitle className="text-base text-slate-800">Exam Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-slate-700 font-medium">
-                      Technical Subject / Domain <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      value={subject}
-                      onChange={e => setSubject(e.target.value)}
-                      placeholder="e.g. Data Structures, Java, DBMS, Python"
-                      className="rounded-xl border-slate-200"
-                    />
-                    <p className="text-xs text-slate-400">AI uses industry-standard knowledge for this subject — not limited to syllabus.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-slate-700 font-medium">Difficulty</Label>
-                    <Select value={difficulty} onValueChange={setDifficulty}>
-                      <SelectTrigger className="rounded-xl border-slate-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DIFFICULTIES.map(d => (
-                          <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-medium">
+                    Subject / Prompt <span className="text-red-500">*</span>
+                  </Label>
+                  <textarea
+                    value={subjectPrompt}
+                    onChange={e => setSubjectPrompt(e.target.value)}
+                    placeholder={"e.g. Generate a company-style mock test for Data Structures based on the latest TCS NQT, Infosys InfyTQ, and Wipro Elite patterns.\n\nOr simply: Java, DBMS, Python, Operating Systems"}
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 placeholder:text-slate-400"
+                  />
+                  <p className="text-xs text-slate-400">Type a subject name, a specific focus area, or a full prompt — the AI adapts to whatever you write here.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-medium">Difficulty</Label>
+                  <Select value={difficulty} onValueChange={setDifficulty}>
+                    <SelectTrigger className="rounded-xl border-slate-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DIFFICULTIES.map(d => (
+                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Company type */}
@@ -743,6 +753,31 @@ export default function ScheduleExamPage() {
                         ))}
                       </div>
                     </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 mb-2">Sections</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={toggleAllSections}
+                          className={`px-3 py-1 rounded-full text-sm font-medium border transition-all ${
+                            selectedSections.length === SECTIONS.length
+                              ? 'bg-violet-600 text-white border-violet-600'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-violet-400'
+                          }`}
+                        >All</button>
+                        {SECTIONS.map(s => (
+                          <button
+                            type="button" key={s}
+                            onClick={() => toggleSection(s)}
+                            className={`w-9 h-9 rounded-xl text-sm font-bold border transition-all ${
+                              selectedSections.includes(s)
+                                ? 'bg-violet-600 text-white border-violet-600'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-violet-400'
+                            }`}
+                          >{s}</button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -762,7 +797,7 @@ export default function ScheduleExamPage() {
 
             <Button
               type="submit"
-              disabled={generating || !subject.trim() || totalQuestions < 5}
+              disabled={generating || !subjectPrompt.trim() || totalQuestions < 5}
               className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg shadow-violet-500/25 transition-all"
             >
               {generating ? (

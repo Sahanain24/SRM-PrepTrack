@@ -593,6 +593,8 @@ export default function ExamResultsPage({ params }: { params: Promise<{ examId: 
   const [newDate, setNewDate]             = useState('');
   const [newTime, setNewTime]             = useState('');
   const [rescheduling, setRescheduling]   = useState(false);
+  const [keepFirstOpen, setKeepFirstOpen]   = useState(false);
+  const [keepingFirst, setKeepingFirst]     = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -676,6 +678,27 @@ export default function ExamResultsPage({ params }: { params: Promise<{ examId: 
     }
   };
 
+  const handleKeepFirstAttempt = async () => {
+    setKeepingFirst(true);
+    try {
+      const res = await fetch(`/api/exams/ai-schedule/${examId}/keep-first-attempt`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast({
+        title: 'Done',
+        description: data.deleted > 0
+          ? `Removed ${data.deleted} extra attempt${data.deleted !== 1 ? 's' : ''}. Only attempt 1 is kept per student.`
+          : 'No extra attempts found — all students already have only one attempt.',
+      });
+      setKeepFirstOpen(false);
+      load();
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setKeepingFirst(false);
+    }
+  };
+
   useEffect(() => { load(); }, [load]);
 
   if (loading) return (
@@ -730,6 +753,16 @@ export default function ExamResultsPage({ params }: { params: Promise<{ examId: 
           >
             <CalendarClock className="h-3.5 w-3.5" /> Reschedule
           </Button>
+          {multiAttempt > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setKeepFirstOpen(true)}
+              className="rounded-xl gap-1.5 border-red-200 text-red-600 hover:bg-red-50"
+            >
+              <XCircle className="h-3.5 w-3.5" /> Keep Attempt 1 Only
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={load} className="rounded-xl gap-1.5">
             <RefreshCw className="h-3.5 w-3.5" /> Refresh
           </Button>
@@ -861,6 +894,34 @@ export default function ExamResultsPage({ params }: { params: Promise<{ examId: 
               className="rounded-xl bg-violet-600 hover:bg-violet-700 text-white"
             >
               {rescheduling ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving…</> : 'Save Schedule'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Keep First Attempt confirmation dialog */}
+      <Dialog open={keepFirstOpen} onOpenChange={setKeepFirstOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <XCircle className="h-5 w-5" /> Remove Extra Attempts
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently delete attempts 2, 3, and beyond for every student on this exam.
+              Only each student's <strong>first attempt</strong> will be kept. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-slate-600 pt-1">
+            <strong>{multiAttempt}</strong> student{multiAttempt !== 1 ? 's' : ''} currently have more than one attempt.
+          </p>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" onClick={() => setKeepFirstOpen(false)} className="rounded-xl">Cancel</Button>
+            <Button
+              onClick={handleKeepFirstAttempt}
+              disabled={keepingFirst}
+              className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
+            >
+              {keepingFirst ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Removing…</> : 'Yes, Keep Attempt 1 Only'}
             </Button>
           </DialogFooter>
         </DialogContent>

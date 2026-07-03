@@ -61,7 +61,7 @@ function NavContent({
     { name: 'Self Assessment Forms',  icon: ClipboardList, href: '/dashboard/teacher/assessments' },
     { name: 'Classroom',              icon: School,        href: '/dashboard/classroom/teacher',     isNew: true },
     { name: 'Mentor Sessions',        icon: Video,         href: '/dashboard/mentor/teacher',        isNew: true },
-    { name: 'Schedule AI Test',       icon: Sparkles,      href: '/dashboard/teacher/schedule-exam',  isNew: true },
+    { name: 'Schedule Technical Test',       icon: Sparkles,      href: '/dashboard/teacher/schedule-exam',  isNew: true },
 { name: 'Schedule Coding Test',   icon: Code2,         href: '/dashboard/teacher/coding-test',   isNew: true },
     { name: 'Placement Updates',      icon: Briefcase,     href: '/dashboard/placements',            isNew: true },
   ];

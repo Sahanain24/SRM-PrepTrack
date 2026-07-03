@@ -20,7 +20,7 @@ import {
   Send, Search, Users, BarChart2,
   ChevronRight, Eye,
   Download, FileSpreadsheet, Code2, Loader2, Filter, X,
-  LineChart, TrendingUp,
+  LineChart, TrendingUp, AlertTriangle,
 } from 'lucide-react';
 import { AITestComparison } from '@/components/dashboard/AITestComparison';
 
@@ -261,6 +261,8 @@ export default function TeacherDashboard() {
   const [studentsLoading, setStudentsLoading] = useState(true);
   const [expandedTestId, setExpandedTestId]   = useState<string | null>(null);
   const [perf, setPerf]                       = useState<any>(null);
+  const [examResults, setExamResults]         = useState<any[]>([]);
+  const [skillGapLoading, setSkillGapLoading] = useState(true);
 
   // ── Load ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -275,13 +277,23 @@ export default function TeacherDashboard() {
       finally { setStudentsLoading(false); }
     })();
 
-    // All aptitude results (for Excel reports)
+    // All aptitude results (for Excel reports + skill gap)
     (async () => {
       try {
         const res = await fetch('/api/aptitude-results');
         const data = await res.json();
         setAptAttempts(Array.isArray(data) ? data : []);
       } catch (e) { console.error('Failed to load aptitude results:', e); }
+    })();
+
+    // Exam results (for skill gap analysis)
+    (async () => {
+      try {
+        const res = await fetch('/api/exam-results');
+        const data = await res.json();
+        setExamResults(Array.isArray(data) ? data : []);
+      } catch (e) { console.error('Failed to load exam results:', e); }
+      finally { setSkillGapLoading(false); }
     })();
 
     // Coding tests
@@ -339,6 +351,44 @@ export default function TeacherDashboard() {
     return true;
   });
   const hasFilters = searchQuery || filterProgram || filterYear || filterSection;
+
+  // ── Skill Gap Derivations ─────────────────────────────────────────────────
+  const rollByName = new Map(students.map(s => [s.name, s.rollNumber || '']));
+
+  const codingTestGaps = (() => {
+    const map = new Map<string, { total: number; sum: number; weak: { name: string; roll: string }[] }>();
+    codingTests.forEach(t => {
+      const subs = codingResults[t._id] || [];
+      subs.forEach((r: any) => {
+        const pct = r.totalMarks > 0 ? Math.round((r.obtainedMarks / r.totalMarks) * 100) : 0;
+        const entry = map.get(t.title) ?? { total: 0, sum: 0, weak: [] };
+        entry.total += 1;
+        entry.sum   += pct;
+        if (pct < 60 && r.studentName && !entry.weak.find(w => w.name === r.studentName))
+          entry.weak.push({ name: r.studentName, roll: r.rollNumber || '' });
+        map.set(t.title, entry);
+      });
+    });
+    return Array.from(map.entries())
+      .map(([title, d]) => ({ subject: title, avg: Math.round(d.sum / d.total), attempts: d.total, weak: d.weak }))
+      .sort((a, b) => a.avg - b.avg);
+  })();
+
+  const examSubjectGaps = (() => {
+    const map = new Map<string, { total: number; sum: number; weak: { name: string; roll: string }[] }>();
+    examResults.forEach(r => {
+      const subj = r.subjectName || r.courseName || 'Unknown';
+      const entry = map.get(subj) ?? { total: 0, sum: 0, weak: [] };
+      entry.total += 1;
+      entry.sum   += r.percentage || 0;
+      if ((r.percentage || 0) < 60 && r.userName && !entry.weak.find(w => w.name === r.userName))
+        entry.weak.push({ name: r.userName, roll: rollByName.get(r.userName) || '' });
+      map.set(subj, entry);
+    });
+    return Array.from(map.entries())
+      .map(([subject, d]) => ({ subject, avg: Math.round(d.sum / d.total), attempts: d.total, weak: d.weak }))
+      .sort((a, b) => a.avg - b.avg);
+  })();
 
   // ── Download handlers ─────────────────────────────────────────────────────
   const handleDownloadClass = async () => {
@@ -457,6 +507,9 @@ export default function TeacherDashboard() {
           </TabsTrigger>
           <TabsTrigger value="coding" className="flex items-center gap-1.5">
             <Code2 className="h-4 w-4" /> Coding Tests
+          </TabsTrigger>
+          <TabsTrigger value="skillgap" className="flex items-center gap-1.5">
+            <AlertTriangle className="h-4 w-4" /> Skill Gap
           </TabsTrigger>
         </TabsList>
 
@@ -668,6 +721,123 @@ export default function TeacherDashboard() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ── Tab 4: Skill Gap Analysis ── */}
+        <TabsContent value="skillgap">
+          <div className="space-y-4">
+            {skillGapLoading ? (
+              <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-violet-500" /></div>
+            ) : (
+              <>
+                {/* Exam Subject Gaps */}
+                <Card className="border-none shadow-lg">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="font-headline flex items-center gap-2 text-base">
+                      <BarChart2 className="h-4 w-4 text-indigo-500" /> AI Test — Subject-wise Performance
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Average score per subject across all students. Subjects below 60% indicate a skill gap.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {examSubjectGaps.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No exam results available yet.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {examSubjectGaps.map(({ subject, avg, attempts, weak }) => {
+                          const bar = `${avg}%`;
+                          const color = avg >= 70 ? 'bg-green-500' : avg >= 50 ? 'bg-yellow-400' : 'bg-red-500';
+                          const label = avg >= 70 ? 'text-green-700' : avg >= 50 ? 'text-yellow-700' : 'text-red-600';
+                          return (
+                            <div key={subject} className="space-y-1.5">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium text-slate-800 truncate max-w-[60%]">{subject}</span>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  {weak.length > 0 && (
+                                    <span className="text-xs text-red-500 flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3" /> {weak.length} student{weak.length > 1 ? 's' : ''} &lt;60%
+                                    </span>
+                                  )}
+                                  <span className={`font-bold text-sm ${label}`}>{avg}%</span>
+                                  <span className="text-xs text-slate-400">{attempts} attempt{attempts > 1 ? 's' : ''}</span>
+                                </div>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-2.5">
+                                <div className={`${color} h-2.5 rounded-full transition-all`} style={{ width: bar }} />
+                              </div>
+                              {weak.length > 0 && (
+                                <div className="flex flex-wrap gap-1 pt-0.5">
+                                  {weak.map(({ name, roll }) => (
+                                    <span key={name} className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
+                                      {roll ? `${roll} — ${name}` : name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Aptitude Topic Gaps */}
+                <Card className="border-none shadow-lg">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="font-headline flex items-center gap-2 text-base">
+                      <Code2 className="h-4 w-4 text-emerald-500" /> Coding Tests — Performance
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Average score per coding test. Tests below 60% indicate a skill gap.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {codingTestGaps.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No coding test submissions yet.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {codingTestGaps.map(({ subject, avg, attempts, weak }) => {
+                          const bar = `${avg}%`;
+                          const color = avg >= 70 ? 'bg-green-500' : avg >= 50 ? 'bg-yellow-400' : 'bg-red-500';
+                          const label = avg >= 70 ? 'text-green-700' : avg >= 50 ? 'text-yellow-700' : 'text-red-600';
+                          return (
+                            <div key={subject} className="space-y-1.5">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium text-slate-800 truncate max-w-[60%]">{subject}</span>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  {weak.length > 0 && (
+                                    <span className="text-xs text-red-500 flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3" /> {weak.length} student{weak.length > 1 ? 's' : ''} &lt;60%
+                                    </span>
+                                  )}
+                                  <span className={`font-bold text-sm ${label}`}>{avg}%</span>
+                                  <span className="text-xs text-slate-400">{attempts} submission{attempts > 1 ? 's' : ''}</span>
+                                </div>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-2.5">
+                                <div className={`${color} h-2.5 rounded-full transition-all`} style={{ width: bar }} />
+                              </div>
+                              {weak.length > 0 && (
+                                <div className="flex flex-wrap gap-1 pt-0.5">
+                                  {weak.map(({ name, roll }) => (
+                                    <span key={name} className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
+                                      {roll ? `${roll} — ${name}` : name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 

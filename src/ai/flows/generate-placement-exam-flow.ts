@@ -65,7 +65,7 @@ const placementPrompt = ai.definePrompt({
 Students are from programs like BCA, BCA(DS), BCom, MSc(ADS), MCom, MCA, and MCA GenAI.
 Your goal is to create a realistic campus placement mock test that mirrors actual company hiring papers for these graduates.
 
-Primary Subject / Technical Domain: {{subject}}
+Subject / Prompt from Teacher: {{subject}}
 Difficulty Level: {{difficulty}}
 Target Company Type: {{companyType}}
 
@@ -77,7 +77,7 @@ Supplementary Context (teacher-provided syllabus — use as additional reference
 {{/if}}
 
 SECTION BREAKDOWN — Generate EXACTLY this many questions per section:
-- Technical ({{sections.technical}} questions): Subject-specific questions on {{subject}} — appropriate for BCA/MCA/MSc/BCom/MCom level
+- Technical ({{sections.technical}} questions): Questions based on the teacher's subject/prompt above — appropriate for BCA/MCA/MSc/BCom/MCom level
 - Aptitude  ({{sections.aptitude}} questions): Quantitative aptitude, numerical reasoning, data interpretation, percentage, profit & loss, time & work
 - Reasoning ({{sections.reasoning}} questions): Logical reasoning, blood relations, series, puzzles, seating arrangement, coding-decoding
 - Verbal    ({{sections.verbal}} questions): Grammar, synonyms/antonyms, sentence correction, reading comprehension, fill in the blanks
@@ -106,9 +106,9 @@ RULES:
 4. For aptitude: include actual numbers, calculations, word problems.
 5. For reasoning: include pattern-based, logical deduction, or puzzle questions.
 6. For verbal: use standard placement exam English questions.
-7. For technical: draw from industry-standard {{subject}} knowledge — appropriate for the program level, not restricted to the supplementary syllabus.
+7. For technical: draw from the knowledge domain described in the teacher's subject/prompt — appropriate for the program level.
 8. Each explanation must say why the correct answer is right AND why each wrong option is wrong.
-9. Title format: "{{subject}} Placement Mock Test — {{difficulty}}"
+9. Title: generate a short, professional exam title (max 60 characters) that captures the subject and purpose — do NOT copy the teacher's prompt verbatim.
 10. No trivial questions. Every question must require genuine thought.
 
 Generate the total number of questions as specified in each section ({{sections.technical}} + {{sections.aptitude}} + {{sections.reasoning}} + {{sections.verbal}} questions in total).`,
