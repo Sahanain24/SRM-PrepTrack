@@ -197,10 +197,10 @@ function SetupScreen({ onStart, onStartScheduled }: {
       <Tabs value={tab} onValueChange={v => setTab(v as any)}>
         <TabsList className="bg-slate-100 rounded-xl w-full">
           <TabsTrigger value="scheduled" className="flex-1 rounded-lg">
-            📋 Scheduled Tests
-            {scheduledExams.length > 0 && (
+            📋 Test Results
+            {scheduledExams.filter(e => e.alreadyAttempted).length > 0 && (
               <span className="ml-1.5 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                {scheduledExams.length}
+                {scheduledExams.filter(e => e.alreadyAttempted).length}
               </span>
             )}
           </TabsTrigger>
@@ -224,17 +224,17 @@ function SetupScreen({ onStart, onStartScheduled }: {
           </div>
           {schedLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-indigo-500" /></div>
-          ) : scheduledExams.length === 0 ? (
+          ) : scheduledExams.filter(e => e.alreadyAttempted || (e.hasReAttemptPermission)).length === 0 ? (
             <Card className="border-dashed border-2 border-slate-200 shadow-none">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-3">
                 <Trophy className="h-12 w-12 text-slate-300" />
-                <p className="font-semibold text-slate-600">No scheduled tests yet</p>
-                <p className="text-sm text-slate-400">Your teacher hasn't scheduled any tests for your program.</p>
+                <p className="font-semibold text-slate-600">No completed tests yet</p>
+                <p className="text-sm text-slate-400">Your attempted tests will appear here once you submit them.</p>
                 <button
                   onClick={loadScheduledExams}
                   className="mt-2 text-xs text-indigo-600 hover:underline flex items-center gap-1"
                 >
-                  <RotateCcw className="h-3 w-3" /> Check again
+                  <RotateCcw className="h-3 w-3" /> Refresh
                 </button>
               </CardContent>
             </Card>
@@ -253,50 +253,6 @@ function SetupScreen({ onStart, onStartScheduled }: {
             const completed = scheduledExams.filter(e =>  e.alreadyAttempted).sort(byRecent);
             return (
               <>
-                {pending.length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Pending Tests</p>
-                    {pending.map((exam: any) => (
-                      <Card key={exam._id} className="border-green-200 shadow-sm hover:shadow-md transition-shadow">
-                        <CardContent className="pt-5 pb-5">
-                          <div className="flex items-start justify-between gap-4 flex-wrap">
-                            <div className="space-y-1.5 flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="font-semibold text-slate-900">{exam.title}</h3>
-                                <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px]">Available</Badge>
-                              </div>
-                              {exam.subject && <p className="text-sm text-slate-500">{exam.subject}</p>}
-                              <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                                {exam.examDate && <span>📅 {new Intl.DateTimeFormat('en-GB').format(new Date(exam.examDate))}</span>}
-                                {exam.startTime && <span>🕐 {exam.startTime}</span>}
-                                {exam.deadlineDate && <span className="text-red-500">⏰ Deadline: {new Intl.DateTimeFormat('en-GB').format(new Date(exam.deadlineDate))} {exam.deadlineTime || ''}</span>}
-                                <span>⏱ {exam.durationMins} min</span>
-                                <span>📝 {exam.totalQuestions} questions</span>
-                                <span>⭐ {exam.totalMarks} marks</span>
-                              </div>
-                              {(exam.targetPrograms?.length > 0 || exam.targetYears?.length > 0) && (
-                                <div className="flex flex-wrap gap-1">
-                                  {exam.targetPrograms?.map((p: string) => <Badge key={p} variant="outline" className="text-[10px] px-1.5">{p}</Badge>)}
-                                  {exam.targetYears?.map((y: number)  => <Badge key={y} variant="outline" className="text-[10px] px-1.5">Year {y}</Badge>)}
-                                </div>
-                              )}
-                            </div>
-                            <Button
-                              onClick={() => handleStartScheduled(exam)}
-                              disabled={starting === exam._id}
-                              className="rounded-xl gap-2 flex-shrink-0 bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              {starting === exam._id
-                                ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting…</>
-                                : <><ChevronRight className="h-4 w-4" /> Start Test</>}
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-
                 {reattempt.length > 0 && (
                   <div className="space-y-3">
                     <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mt-2">🔓 Reattempt Granted</p>
