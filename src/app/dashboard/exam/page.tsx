@@ -60,7 +60,7 @@ function SetupScreen({ onStart, onStartScheduled }: {
   const [count, setCount]                     = useState(10);
   const [leaderboard, setLeaderboard]         = useState<LeaderboardEntry[]>([]);
   const [lbExam,      setLbExam]              = useState<string>('');
-  const [tab, setTab]                         = useState<'setup' | 'scheduled' | 'leaderboard'>('setup');
+  const [tab, setTab]                         = useState<'setup' | 'scheduled' | 'leaderboard'>('scheduled');
   const [scheduledExams, setScheduledExams]   = useState<any[]>([]);
   const [schedLoading, setSchedLoading]       = useState(false);
   const [starting, setStarting]               = useState<string | null>(null);
