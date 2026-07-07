@@ -194,6 +194,10 @@ export default function ScheduleExamPage() {
       toast({ title: 'Missing subject', description: 'Enter the subject or prompt for this exam.', variant: 'destructive' });
       return;
     }
+    if (!customTitle.trim()) {
+      toast({ title: 'Title required', description: 'Enter a custom title — this is what students will see.', variant: 'destructive' });
+      return;
+    }
     if (totalQuestions < 5) {
       toast({ title: 'Too few questions', description: 'Total questions must be at least 5.', variant: 'destructive' });
       return;
@@ -240,7 +244,7 @@ export default function ScheduleExamPage() {
 
       // Step 3: hand off to the review screen — teacher can edit/remove before publishing
       setReviewQuestions(questions);
-      setReviewTitle(customTitle.trim() || aiOutput.title);
+      setReviewTitle(customTitle.trim());
     } catch (err: any) {
       toast({ title: 'Error generating exam', description: err.message, variant: 'destructive' });
     } finally {
@@ -291,8 +295,8 @@ export default function ScheduleExamPage() {
         body: JSON.stringify({
           teacherId,
           title:       reviewTitle,
-          subject:     subjectPrompt.trim(),
-          description: `AI Placement Mock Test (${companyType})`,
+          subject:     reviewTitle,
+          description: '',
           examDate,
           startTime,
           deadlineDate,
@@ -613,14 +617,16 @@ export default function ScheduleExamPage() {
 
                 <div className="space-y-2">
                   <Label className="text-slate-700 font-medium">
-                    Custom Title <span className="text-slate-400 font-normal text-xs">(optional)</span>
+                    Exam Title (shown to students) <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     value={customTitle}
                     onChange={e => setCustomTitle(e.target.value)}
-                    placeholder="AI will generate one if left blank"
+                    placeholder="e.g. Mid Semester Mock Test – Data Structures"
                     className="rounded-xl border-slate-200"
+                    required
                   />
+                  <p className="text-xs text-slate-400">This is the only title students will see — the prompt above stays private.</p>
                 </div>
               </CardContent>
             </Card>
@@ -797,7 +803,7 @@ export default function ScheduleExamPage() {
 
             <Button
               type="submit"
-              disabled={generating || !subjectPrompt.trim() || totalQuestions < 5}
+              disabled={generating || !subjectPrompt.trim() || !customTitle.trim() || totalQuestions < 5}
               className="w-full h-12 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg shadow-violet-500/25 transition-all"
             >
               {generating ? (
