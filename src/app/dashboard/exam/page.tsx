@@ -283,31 +283,6 @@ function SetupScreen({ onStart, onStartScheduled }: {
                   </div>
                 )}
 
-                {locked.length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mt-2">🔒 Deadline Passed</p>
-                    {locked.map((exam: any) => (
-                      <Card key={exam._id} className="border-red-200 shadow-sm opacity-70">
-                        <CardContent className="pt-5 pb-5">
-                          <div className="flex items-start justify-between gap-4 flex-wrap">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="font-semibold text-slate-700">{exam.title}</h3>
-                                <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">Deadline Passed</Badge>
-                              </div>
-                              {exam.subject && <p className="text-sm text-slate-400">{exam.subject}</p>}
-                              <p className="text-xs text-red-500">The deadline for this test has passed. Contact your teacher to request a reattempt.</p>
-                            </div>
-                            <Button disabled className="rounded-xl gap-2 flex-shrink-0" variant="outline">
-                              🔒 Locked
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-
                 {completed.length > 0 && (
                   <div className="space-y-3">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-2">Completed Tests</p>
