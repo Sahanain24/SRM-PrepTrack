@@ -677,6 +677,27 @@ function ExamScreen({ examData, totalSeconds, onComplete }: {
     };
   }, []);
 
+  // Block browser back button — push a sentinel history entry so pressing back
+  // triggers popstate instead of leaving the page; auto-submit on popstate.
+  useEffect(() => {
+    window.history.pushState({ examInProgress: true }, '');
+    const handlePopState = () => {
+      // Re-push so repeated back presses also hit this handler
+      window.history.pushState({ examInProgress: true }, '');
+      submitExam();
+    };
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      submitExam();
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [submitExam]);
+
   // ── Tab-switch / focus-loss detection ──────────────────────────────────────
   const [tabSwitches, setTabSwitches] = useState(0);
   const MAX_TAB_SWITCHES = 3;
