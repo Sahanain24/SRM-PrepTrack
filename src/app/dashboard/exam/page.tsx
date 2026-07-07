@@ -60,7 +60,7 @@ function SetupScreen({ onStart, onStartScheduled }: {
   const [count, setCount]                     = useState(10);
   const [leaderboard, setLeaderboard]         = useState<LeaderboardEntry[]>([]);
   const [lbExam,      setLbExam]              = useState<string>('');
-  const [tab, setTab]                         = useState<'setup' | 'scheduled' | 'leaderboard'>('scheduled');
+  const [tab, setTab]                         = useState<'setup' | 'pending' | 'scheduled' | 'leaderboard'>('pending');
   const [scheduledExams, setScheduledExams]   = useState<any[]>([]);
   const [schedLoading, setSchedLoading]       = useState(false);
   const [starting, setStarting]               = useState<string | null>(null);
@@ -196,8 +196,16 @@ function SetupScreen({ onStart, onStartScheduled }: {
 
       <Tabs value={tab} onValueChange={v => setTab(v as any)}>
         <TabsList className="bg-slate-100 rounded-xl w-full">
+          <TabsTrigger value="pending" className="flex-1 rounded-lg">
+            📋 Scheduled Tests
+            {scheduledExams.filter(e => !e.alreadyAttempted).length > 0 && (
+              <span className="ml-1.5 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {scheduledExams.filter(e => !e.alreadyAttempted).length}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="scheduled" className="flex-1 rounded-lg">
-            📋 Test Results
+            ✅ Test Results
             {scheduledExams.filter(e => e.alreadyAttempted).length > 0 && (
               <span className="ml-1.5 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                 {scheduledExams.filter(e => e.alreadyAttempted).length}
@@ -207,8 +215,67 @@ function SetupScreen({ onStart, onStartScheduled }: {
           <TabsTrigger value="leaderboard" className="flex-1 rounded-lg">🏆 Leaderboard</TabsTrigger>
         </TabsList>
 
-        
+        {/* ── Scheduled Tests (pending) ─────────────────────────────────── */}
+        <TabsContent value="pending" className="mt-4 space-y-4">
+          <div className="flex justify-end">
+            <button onClick={loadScheduledExams} disabled={schedLoading}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 transition-colors disabled:opacity-50">
+              {schedLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+              Refresh
+            </button>
+          </div>
+          {schedLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-indigo-500" /></div>
+          ) : scheduledExams.filter(e => !e.alreadyAttempted).length === 0 ? (
+            <Card className="border-dashed border-2 border-slate-200 shadow-none">
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-3">
+                <Trophy className="h-12 w-12 text-slate-300" />
+                <p className="font-semibold text-slate-600">No scheduled tests</p>
+                <p className="text-sm text-slate-400">Tests assigned by your teacher will appear here.</p>
+                <button onClick={loadScheduledExams} className="mt-2 text-xs text-indigo-600 hover:underline flex items-center gap-1">
+                  <RotateCcw className="h-3 w-3" /> Refresh
+                </button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {scheduledExams.filter(e => !e.alreadyAttempted).map((exam: any) => (
+                <Card key={exam._id} className="border-indigo-200 shadow-sm hover:shadow-md transition-shadow">
+                  <CardContent className="pt-5 pb-5">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-slate-900">{exam.title}</h3>
+                          <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px]">Pending</Badge>
+                        </div>
+                        {exam.subject && exam.subject !== exam.title && <p className="text-sm text-slate-500">{exam.subject}</p>}
+                        <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                          {exam.examDate && <span>📅 {new Intl.DateTimeFormat('en-GB').format(new Date(exam.examDate))}</span>}
+                          {exam.startTime && <span>🕐 {exam.startTime}</span>}
+                          {exam.deadlineDate && <span className="text-red-500">⏰ Deadline: {new Intl.DateTimeFormat('en-GB').format(new Date(exam.deadlineDate))} {exam.deadlineTime || ''}</span>}
+                          <span>⏱ {exam.durationMins} min</span>
+                          <span>📝 {exam.totalQuestions} questions</span>
+                          <span>⭐ {exam.totalMarks} marks</span>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => handleStartScheduled(exam)}
+                        disabled={starting === exam._id}
+                        className="rounded-xl gap-2 flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        {starting === exam._id
+                          ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting…</>
+                          : <><ChevronRight className="h-4 w-4" /> Start Test</>}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
+        {/* ── Test Results (attempted) ──────────────────────────────────── */}
         <TabsContent value="scheduled" className="mt-4 space-y-4">
           <div className="flex justify-end">
             <button
@@ -224,16 +291,13 @@ function SetupScreen({ onStart, onStartScheduled }: {
           </div>
           {schedLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-indigo-500" /></div>
-          ) : scheduledExams.filter(e => e.alreadyAttempted || (e.hasReAttemptPermission)).length === 0 ? (
+          ) : scheduledExams.filter(e => e.alreadyAttempted || e.hasReAttemptPermission).length === 0 ? (
             <Card className="border-dashed border-2 border-slate-200 shadow-none">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-3">
                 <Trophy className="h-12 w-12 text-slate-300" />
                 <p className="font-semibold text-slate-600">No completed tests yet</p>
                 <p className="text-sm text-slate-400">Your attempted tests will appear here once you submit them.</p>
-                <button
-                  onClick={loadScheduledExams}
-                  className="mt-2 text-xs text-indigo-600 hover:underline flex items-center gap-1"
-                >
+                <button onClick={loadScheduledExams} className="mt-2 text-xs text-indigo-600 hover:underline flex items-center gap-1">
                   <RotateCcw className="h-3 w-3" /> Refresh
                 </button>
               </CardContent>
@@ -247,7 +311,6 @@ function SetupScreen({ onStart, onStartScheduled }: {
               const dl = new Date(`${e.deadlineDate}T${e.deadlineTime || '23:59'}:00`);
               return dl < now;
             };
-            const pending   = scheduledExams.filter(e => !e.alreadyAttempted && !isPastDeadline(e)).sort(byRecent);
             const locked    = scheduledExams.filter(e => !e.alreadyAttempted && isPastDeadline(e) && !e.hasReAttemptPermission).sort(byRecent);
             const reattempt = scheduledExams.filter(e => !e.alreadyAttempted && isPastDeadline(e) &&  e.hasReAttemptPermission).sort(byRecent);
             const completed = scheduledExams.filter(e =>  e.alreadyAttempted).sort(byRecent);
