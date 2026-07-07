@@ -170,7 +170,7 @@ export default function AuthPage() {
     e.preventDefault();
     setStudentRegError('');
     if (!/^[A-Z0-9]{15}$/.test(studentReg.rollNumber)) {
-      setStudentRegError('Roll number must be exactly 15 alphanumeric characters (e.g. RA2532242020001).');
+      setStudentRegError('Roll number must be exactly 15 alphanumeric characters (e.g. RA2531212010001).');
       return;
     }
     setIsLoading(true);
@@ -342,7 +342,7 @@ export default function AuthPage() {
                   <Label htmlFor="rollNumber">Roll Number</Label>
                   <Input
                     id="rollNumber"
-                    placeholder="e.g. RA2532242020001"
+                    placeholder="e.g. RA2531212010001"
                     required
                     maxLength={15}
                     value={rollNumber}
@@ -432,14 +432,14 @@ export default function AuthPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="sregRoll">Roll Number</Label>
-                      <Input id="sregRoll" placeholder="e.g. RA2532242020001" required maxLength={15}
+                      <Input id="sregRoll" placeholder="e.g. RA2531212010001" required maxLength={15}
                         value={studentReg.rollNumber}
                         className="uppercase font-mono"
                         onChange={e => {
                           const v = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15).toUpperCase();
                           setStudentReg(p => ({ ...p, rollNumber: v }));
                         }} />
-                      <p className="text-xs text-slate-400">Alphanumeric, exactly 15 characters (e.g. RA2532242020001){studentReg.rollNumber ? ` — ${studentReg.rollNumber.length}/15` : ''}</p>
+                      <p className="text-xs text-slate-400">Alphanumeric, exactly 15 characters (e.g. RA2531212010001){studentReg.rollNumber ? ` — ${studentReg.rollNumber.length}/15` : ''}</p>
                     </div>
 
                     <div className="space-y-2">
@@ -700,7 +700,7 @@ export default function AuthPage() {
                   <div>
                     <p className="text-sm font-semibold text-blue-800">Default password is your Roll Number</p>
                     <p className="text-xs text-blue-600 mt-0.5">
-                      Your password is set to your Roll Number by default (e.g. <span className="font-mono">RA2532242020001</span>). Try logging in with it.
+                      Your password is set to your Roll Number by default (e.g. <span className="font-mono">RA2531212010001</span>). Try logging in with it.
                     </p>
                   </div>
                 </div>

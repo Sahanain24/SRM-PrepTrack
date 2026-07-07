@@ -75,7 +75,8 @@ function SetupScreen({ onStart, onStartScheduled }: {
     const params = new URLSearchParams();
     if (user.program) params.set('program', user.program);
     if (user.year)    params.set('year',    String(user.year));
-    if (user.batch)   params.set('batch',   user.batch || '');
+    if (user.batch)   params.set('batch',   user.batch   || '');
+    if (user.section) params.set('section', user.section || '');
     const userId = user._id || user.id;
     if (userId) params.set('userId', userId);
     fetch(`/api/student-exams?${params}`)

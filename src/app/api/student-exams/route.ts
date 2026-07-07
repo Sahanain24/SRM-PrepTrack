@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const program = searchParams.get('program') || '';
     const year    = parseInt(searchParams.get('year') || '0');
     const batch   = searchParams.get('batch')   || '';
+    const section = searchParams.get('section') || '';
     const userId  = searchParams.get('userId')  || '';
 
     const exams = await Exam.find({ status: 'published' })
@@ -22,7 +23,10 @@ export async function GET(request: NextRequest) {
     const visible = exams.filter((exam: any) => {
       const progMatch  = !exam.targetPrograms?.length  || (program && exam.targetPrograms.includes(program));
       const yearMatch  = !exam.targetYears?.length     || (year    && exam.targetYears.includes(year));
-      const batchMatch = !exam.targetBatches?.length   || (batch   && exam.targetBatches.includes(batch));
+      // targetBatches stores section letters (A, B, C…); also accept batch-year match as fallback
+      const batchMatch = !exam.targetBatches?.length   ||
+        (section && exam.targetBatches.includes(section)) ||
+        (batch   && exam.targetBatches.includes(batch));
       return progMatch && yearMatch && batchMatch;
     });
 
