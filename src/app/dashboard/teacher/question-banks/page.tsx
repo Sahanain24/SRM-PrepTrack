@@ -235,6 +235,11 @@ export default function QuestionBanksPage() {
     if (!schedule.examDate)     { toast({ title: 'Date is required', variant: 'destructive' }); return; }
     if (!schedule.startTime)    { toast({ title: 'Start time is required', variant: 'destructive' }); return; }
     if (!activeBank) return;
+    const hasBatches = schedule.targetBatches.split(',').map(s => s.trim()).filter(Boolean).length > 0;
+    if (schedule.targetPrograms.length === 0 && schedule.targetYears.length === 0 && !hasBatches) {
+      toast({ title: 'No target selected', description: 'Select at least one program, year, or batch so the right students can see this test.', variant: 'destructive' });
+      return;
+    }
     setSchedSaving(true);
     try {
       const batches = schedule.targetBatches

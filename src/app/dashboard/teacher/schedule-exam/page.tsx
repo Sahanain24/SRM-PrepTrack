@@ -282,6 +282,10 @@ export default function ScheduleExamPage() {
       toast({ title: 'No questions', description: 'Add at least one question before publishing.', variant: 'destructive' });
       return;
     }
+    if (selectedPrograms.length === 0 && selectedYears.length === 0 && selectedSections.length === 0) {
+      toast({ title: 'No target selected', description: 'Select at least one program, year, or section so the right students can see this test.', variant: 'destructive' });
+      return;
+    }
 
     const user = getCurrentUser();
     if (!user) return;

@@ -19,15 +19,19 @@ export async function GET(request: NextRequest) {
       .sort({ examDate: 1, startTime: 1 })
       .lean();
 
-    // Filter by target audience.
-    // If teacher left a dimension empty → show to everyone.
-    // If student profile doesn't have the field → give benefit of the doubt and show.
+    // Strict targeting: exam must have at least one targeting criterion set.
+    // A test with no programs/years/batches selected is not shown to anyone.
     const visible = exams.filter((exam: any) => {
-      const progMatch  = !exam.targetPrograms?.length  || !program || exam.targetPrograms.includes(program);
-      const yearMatch  = !exam.targetYears?.length     || !year    || exam.targetYears.includes(year);
-      // targetBatches may hold section letters (AI schedule) or batch-year strings (QB schedule)
-      const batchMatch = !exam.targetBatches?.length   ||
-        (!section && !batch) ||
+      const hasTarget =
+        exam.targetPrograms?.length > 0 ||
+        exam.targetYears?.length    > 0 ||
+        exam.targetBatches?.length  > 0;
+      if (!hasTarget) return false;
+
+      const progMatch  = !exam.targetPrograms?.length || (program && exam.targetPrograms.includes(program));
+      const yearMatch  = !exam.targetYears?.length    || (year    && exam.targetYears.includes(year));
+      // targetBatches holds section letters (AI schedule) or batch-year strings (QB schedule)
+      const batchMatch = !exam.targetBatches?.length  ||
         (section && exam.targetBatches.includes(section)) ||
         (batch   && exam.targetBatches.includes(batch));
       return progMatch && yearMatch && batchMatch;
