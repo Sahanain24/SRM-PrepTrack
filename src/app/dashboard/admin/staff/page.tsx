@@ -64,6 +64,9 @@ export default function StaffManagementPage() {
   const [addLoading, setAddLoading] = useState(false);
   const [newStaff, setNewStaff]     = useState(BLANK_STAFF);
 
+  const [deleteTarget, setDeleteTarget] = useState<Staff | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const loadStaff = useCallback(async () => {
     setLoading(true);
     try {
@@ -142,6 +145,23 @@ export default function StaffManagementPage() {
     await callAction(s._id, next);
     toast({ title: `${s.name} ${next}d` });
     loadStaff();
+  };
+
+  const deleteStaff = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/admin/staff/${deleteTarget._id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete');
+      toast({ title: `${deleteTarget.name} has been removed.` });
+      setDeleteTarget(null);
+      loadStaff();
+    } catch (e: any) {
+      toast({ title: e.message, variant: 'destructive' });
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const changeRole = async (s: Staff, role: string) => {
@@ -296,6 +316,16 @@ export default function StaffManagementPage() {
                           >
                             <Power className="h-4 w-4" />
                           </Button>
+                          {member.role !== 'admin' && (
+                            <Button
+                              variant="ghost" size="sm"
+                              title="Remove staff member"
+                              onClick={() => setDeleteTarget(member)}
+                              className="text-slate-400 hover:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -306,6 +336,30 @@ export default function StaffManagementPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" /> Remove Staff Member
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently delete <strong>{deleteTarget?.name}</strong> ({deleteTarget?.email}) from the system. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} className="rounded-xl">Cancel</Button>
+            <Button
+              onClick={deleteStaff}
+              disabled={deleteLoading}
+              className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleteLoading ? 'Removing…' : 'Yes, Remove'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Staff Dialog */}
       <Dialog open={addOpen} onOpenChange={open => { setAddOpen(open); if (!open) setNewStaff(BLANK_STAFF); }}>

@@ -46,7 +46,8 @@ export async function DELETE(
     await connectDB();
     const user = await User.findById(params.id);
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    await User.findByIdAndUpdate(params.id, { isActive: false });
+    if (user.role === 'admin') return NextResponse.json({ error: 'Cannot delete an admin account' }, { status: 403 });
+    await User.findByIdAndDelete(params.id);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
