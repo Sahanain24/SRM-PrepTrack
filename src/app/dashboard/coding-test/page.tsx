@@ -13,9 +13,14 @@ import {
 
 interface CodingTestSummary {
   _id: string; title: string; description?: string; durationMins: number;
-  examDate?: string; startTime?: string;
+  examDate?: string; startTime?: string; deadlineDate?: string; deadlineTime?: string;
   problems: { problemId: string; marks: number }[];
   teacherName?: string; createdAt: string;
+}
+
+function isPastDeadline(t: CodingTestSummary) {
+  if (!t.deadlineDate) return false;
+  return new Date(`${t.deadlineDate}T${t.deadlineTime || '23:59'}:00`) < new Date();
 }
 
 export default function StudentCodingTestsPage() {
@@ -92,6 +97,7 @@ export default function StudentCodingTestsPage() {
         <div className="space-y-3">
           {tests.map(t => {
             const attempted = t._id in done;
+            const locked = !attempted && isPastDeadline(t);
             return (
               <Card key={t._id} className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="pt-4 pb-4 flex items-center justify-between flex-wrap gap-3">
@@ -103,18 +109,30 @@ export default function StudentCodingTestsPage() {
                           <CheckCircle2 className="h-3 w-3" /> Submitted · {done[t._id]}/{totalMarks(t)}
                         </span>
                       )}
+                      {locked && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                          Deadline Passed
+                        </span>
+                      )}
                     </div>
                     {t.description && <p className="text-sm text-slate-600 mt-0.5">{t.description}</p>}
                     <div className="flex flex-wrap gap-3 text-xs text-slate-400 mt-1">
                       <Badge variant="outline" className="text-[10px]">{t.problems?.length || 0} problem(s)</Badge>
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{t.durationMins} min</span>
                       <span>Total Marks: {totalMarks(t)}</span>
+                      {t.deadlineDate && <span>Deadline: {t.deadlineDate} {t.deadlineTime || ''}</span>}
                     </div>
                   </div>
-                  <Button size="sm" onClick={() => router.push(`/dashboard/coding-test/${t._id}`)}
-                    className="gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs">
-                    {attempted ? 'View Submission' : 'Attempt Test'} <ArrowRight className="h-3 w-3" />
-                  </Button>
+                  {locked ? (
+                    <Button size="sm" disabled className="gap-1.5 rounded-xl text-xs opacity-50 cursor-not-allowed">
+                      🔒 Locked
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={() => router.push(`/dashboard/coding-test/${t._id}`)}
+                      className="gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs">
+                      {attempted ? 'View Submission' : 'Attempt Test'} <ArrowRight className="h-3 w-3" />
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );

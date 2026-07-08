@@ -155,6 +155,10 @@ export default function TeacherCodingTestPage() {
       toast({ title: 'Incomplete form', description: 'Fill in all problem titles, descriptions and expected outputs.', variant: 'destructive' });
       return;
     }
+    if (selectedPrograms.length === 0 && selectedYears.length === 0 && selectedSections.length === 0) {
+      toast({ title: 'No target selected', description: 'Select at least one program, year, or section so the right students can see this test.', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch('/api/coding-tests', {
@@ -197,7 +201,7 @@ export default function TeacherCodingTestPage() {
           <form onSubmit={submit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Test Title *</Label>
+                <Label>Test Title (shown to students) *</Label>
                 <Input placeholder="e.g. Arrays & Strings Practice" value={title} onChange={e => setTitle(e.target.value)} className="rounded-xl" required />
               </div>
               <div className="space-y-1.5">
@@ -236,8 +240,14 @@ export default function TeacherCodingTestPage() {
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs">Topic *</Label>
-                  <Input placeholder="e.g. Arrays and Strings, Recursion" value={aiTopic} onChange={e => setAiTopic(e.target.value)} className="rounded-xl" />
+                  <Label className="text-xs">Subject / Prompt * <span className="text-slate-400 font-normal">(private — not shown to students)</span></Label>
+                  <textarea
+                    value={aiTopic}
+                    onChange={e => setAiTopic(e.target.value)}
+                    placeholder={"e.g. Arrays and Strings – focus on two-pointer and sliding window problems\n\nOr simply: Recursion, Dynamic Programming, Graph BFS/DFS"}
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-300 placeholder:text-slate-400"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Difficulty</Label>

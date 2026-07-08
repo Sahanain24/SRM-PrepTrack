@@ -46,6 +46,7 @@ export default function AttemptCodingTestPage() {
   const [loading, setLoading] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
   const [code, setCode] = useState<Record<string, string>>({});
+  const [selectedLang, setSelectedLang] = useState<Record<string, string>>({});
   const [running, setRunning] = useState(false);
   const [runResults, setRunResults] = useState<Record<string, any>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -70,10 +71,14 @@ export default function AttemptCodingTestPage() {
         setSubmission(sData[0]);
       } else {
         const initial: Record<string, string> = {};
+        const initialLang: Record<string, string> = {};
         (tData.problems || []).forEach((p: Problem) => {
-          initial[p.problemId] = LANGUAGE_SKELETONS[p.language] || LANGUAGE_SKELETONS.javascript;
+          const lang = p.language || 'javascript';
+          initialLang[p.problemId] = lang;
+          initial[p.problemId] = LANGUAGE_SKELETONS[lang] || LANGUAGE_SKELETONS.javascript;
         });
         setCode(initial);
+        setSelectedLang(initialLang);
 
         // Persist a per-student start time so refreshing doesn't reset the timer
         const storageKey = `coding-test-start-${id}-${studentId}`;
@@ -105,7 +110,7 @@ export default function AttemptCodingTestPage() {
     setSubmitting(true);
     try {
       const answers = (test?.problems || []).map((p: Problem) => ({
-        problemId: p.problemId, code: code[p.problemId] || '', language: p.language,
+        problemId: p.problemId, code: code[p.problemId] || '', language: selectedLang[p.problemId] || p.language,
       }));
       const res = await fetch(`/api/coding-tests/${id}/submit`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -174,7 +179,7 @@ export default function AttemptCodingTestPage() {
     try {
       const res = await fetch(`/api/coding-tests/${id}/run`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problemId: problem.problemId, code: code[problem.problemId] || '', language: problem.language }),
+        body: JSON.stringify({ problemId: problem.problemId, code: code[problem.problemId] || '', language: selectedLang[problem.problemId] || problem.language }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -320,7 +325,7 @@ export default function AttemptCodingTestPage() {
               <h2 className="text-lg font-bold text-slate-900">{problem.title}</h2>
               <Badge variant="outline" className="capitalize">{problem.difficulty}</Badge>
               <Badge variant="outline">{problem.marks} marks</Badge>
-              <Badge variant="outline">{problem.language}</Badge>
+              <Badge variant="outline">{selectedLang[problem.problemId] || problem.language}</Badge>
             </div>
             <p className="text-sm text-slate-600 whitespace-pre-wrap">{problem.description}</p>
             {problem.testCases.filter(tc => !tc.hidden).length > 0 && (
@@ -340,6 +345,22 @@ export default function AttemptCodingTestPage() {
         {/* Code editor */}
         <Card className="border-slate-200">
           <CardContent className="pt-4 pb-4 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-slate-700">Code Editor</p>
+              <select
+                value={selectedLang[problem.problemId] || problem.language}
+                onChange={e => {
+                  const lang = e.target.value;
+                  setSelectedLang(prev => ({ ...prev, [problem.problemId]: lang }));
+                  setCode(prev => ({ ...prev, [problem.problemId]: LANGUAGE_SKELETONS[lang] || LANGUAGE_SKELETONS.javascript }));
+                }}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 text-sm bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              >
+                {Object.keys(LANGUAGE_SKELETONS).map(lang => (
+                  <option key={lang} value={lang}>{lang.charAt(0).toUpperCase() + lang.slice(1)}</option>
+                ))}
+              </select>
+            </div>
             <Textarea
               value={code[problem.problemId] ?? ''}
               onChange={e => setCode(c => ({ ...c, [problem.problemId]: e.target.value }))}
@@ -347,7 +368,7 @@ export default function AttemptCodingTestPage() {
               onCopy={blockClipboard}
               onCut={blockClipboard}
               className="rounded-xl min-h-72 font-mono text-sm"
-              placeholder={`Write your ${problem.language} code here...`}
+              placeholder={`Write your ${selectedLang[problem.problemId] || problem.language} code here...`}
             />
             <Button type="button" variant="outline" onClick={runCode} disabled={running} className="gap-2 rounded-xl">
               {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
