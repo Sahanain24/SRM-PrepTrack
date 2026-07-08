@@ -120,6 +120,9 @@ export async function POST(request: NextRequest) {
             year:       parseInt(body.year)     || existing.year       || 1,
             batch:      body.batch?.trim()      || existing.batch      || '',
             section:    body.section?.trim()    || existing.section    || '',
+            password:   roll,
+            isFirstLogin:            true,
+            selfAssessmentCompleted: false,
           },
           { new: true }
         ).select('-password');
