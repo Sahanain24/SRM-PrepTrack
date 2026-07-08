@@ -59,6 +59,12 @@ Rules:
 5. Each question needs a full explanation: why the correct answer is right, and why each wrong option is incorrect.
 6. Vary question styles: MCQ definitions, scenario-based, fill-in-concept, "which of the following", find-the-error.
 7. Title format: "{{subjectName}} — {{difficulty}} Exam" (e.g. "Data Structures — hard Exam")
+8. If a question contains a code snippet, format it for maximum readability:
+   - Use actual newline characters (\n) to separate each line — never write code as a single run-on string.
+   - Indent with 4 spaces per level (not tabs).
+   - Place the code block on its own line(s), clearly separated from the question text.
+   - Example format: "What is the output of the following code?\n\ndef foo(x):\n    if x > 0:\n        return x * 2\n    return 0\n\nprint(foo(3))"
+   - Keep snippets short (≤15 lines) and focused on exactly one concept being tested.
 
 Generate exactly {{count}} questions.`,
 });

@@ -26,6 +26,25 @@ import {
   RotateCcw, Loader2, Lightbulb, Flag, AlertTriangle, TrendingUp, GraduationCap, ArrowLeft,
 } from 'lucide-react';
 
+// Renders question text: prose lines as normal text, code-looking lines in a monospace block
+function QuestionText({ text, className }: { text: string; className?: string }) {
+  const lines = text.split('\n');
+  const codeStart = lines.findIndex(l => /^\s{2,}|^(def |class |int |void |public |#include|import |from |const |let |var |function |print\(|System\.|cout)/.test(l));
+  if (codeStart === -1) {
+    return <span className={className} style={{ whiteSpace: 'pre-wrap' }}>{text}</span>;
+  }
+  const prose = lines.slice(0, codeStart).join('\n').trim();
+  const code  = lines.slice(codeStart).join('\n').trim();
+  return (
+    <span className={className}>
+      {prose && <span style={{ whiteSpace: 'pre-wrap' }}>{prose}{'\n'}</span>}
+      <code className="block mt-2 p-3 rounded-xl bg-slate-900 text-slate-100 text-sm font-mono leading-relaxed overflow-x-auto whitespace-pre">
+        {code}
+      </code>
+    </span>
+  );
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 // Total exam time = 90 seconds × number of questions
 const SECONDS_PER_QUESTION = 90;
@@ -567,7 +586,7 @@ function QuestionCard({ q, idx, total, answers, flagged, onAnswer, onFlag }: {
                 </span>
               )}
             </div>
-            <CardTitle className="text-lg font-semibold text-slate-900 leading-snug">{q.question}</CardTitle>
+            <CardTitle className="text-lg font-semibold text-slate-900 leading-snug"><QuestionText text={q.question} /></CardTitle>
           </div>
           <button
             onClick={onFlag}
@@ -1097,7 +1116,7 @@ function ResultsScreen({ examData, answers, score, timeTaken, tabViolations, onR
                               {skip ? 'Skipped' : ok ? 'Correct' : 'Incorrect'}
                             </span>
                           </div>
-                          <p className="text-sm font-medium text-slate-800 leading-snug">{q.question}</p>
+                          <p className="text-sm font-medium text-slate-800 leading-snug"><QuestionText text={q.question} /></p>
                         </div>
                         <ChevronRight className={`h-4 w-4 text-slate-400 flex-shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
                       </div>
