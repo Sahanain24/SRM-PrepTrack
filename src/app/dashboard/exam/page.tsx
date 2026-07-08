@@ -198,9 +198,9 @@ function SetupScreen({ onStart, onStartScheduled }: {
         <TabsList className="bg-slate-100 rounded-xl w-full">
           <TabsTrigger value="pending" className="flex-1 rounded-lg">
             📋 Scheduled Tests
-            {scheduledExams.filter(e => !e.alreadyAttempted && (!e.deadlineDate || new Date(`${e.deadlineDate}T${e.deadlineTime || '23:59'}:00`) >= new Date())).length > 0 && (
+            {scheduledExams.filter(e => !e.alreadyAttempted).length > 0 && (
               <span className="ml-1.5 bg-indigo-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                {scheduledExams.filter(e => !e.alreadyAttempted && (!e.deadlineDate || new Date(`${e.deadlineDate}T${e.deadlineTime || '23:59'}:00`) >= new Date())).length}
+                {scheduledExams.filter(e => !e.alreadyAttempted).length}
               </span>
             )}
           </TabsTrigger>
@@ -226,7 +226,7 @@ function SetupScreen({ onStart, onStartScheduled }: {
           </div>
           {schedLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-indigo-500" /></div>
-          ) : scheduledExams.filter(e => !e.alreadyAttempted && (!e.deadlineDate || new Date(`${e.deadlineDate}T${e.deadlineTime || '23:59'}:00`) >= new Date())).length === 0 ? (
+          ) : scheduledExams.filter(e => !e.alreadyAttempted).length === 0 ? (
             <Card className="border-dashed border-2 border-slate-200 shadow-none">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-3">
                 <Trophy className="h-12 w-12 text-slate-300" />
@@ -239,14 +239,20 @@ function SetupScreen({ onStart, onStartScheduled }: {
             </Card>
           ) : (
             <div className="space-y-3">
-              {scheduledExams.filter(e => !e.alreadyAttempted && (!e.deadlineDate || new Date(`${e.deadlineDate}T${e.deadlineTime || '23:59'}:00`) >= new Date())).map((exam: any) => (
-                <Card key={exam._id} className="border-indigo-200 shadow-sm hover:shadow-md transition-shadow">
+              {scheduledExams.filter(e => !e.alreadyAttempted).map((exam: any) => {
+                const isPast = exam.deadlineDate
+                  ? new Date(`${exam.deadlineDate}T${exam.deadlineTime || '23:59'}:00`) < new Date()
+                  : false;
+                return (
+                <Card key={exam._id} className={`shadow-sm transition-shadow ${isPast ? 'border-red-200 opacity-75' : 'border-indigo-200 hover:shadow-md'}`}>
                   <CardContent className="pt-5 pb-5">
                     <div className="flex items-start justify-between gap-4 flex-wrap">
                       <div className="space-y-1.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-slate-900">{exam.title}</h3>
-                          <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px]">Pending</Badge>
+                          {isPast
+                            ? <Badge className="bg-red-100 text-red-700 border-red-200 text-[10px]">Deadline Passed</Badge>
+                            : <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px]">Pending</Badge>}
                         </div>
                         {exam.subject && exam.subject !== exam.title && <p className="text-sm text-slate-500">{exam.subject}</p>}
                         <div className="flex flex-wrap gap-3 text-xs text-slate-500">
@@ -257,20 +263,24 @@ function SetupScreen({ onStart, onStartScheduled }: {
                           <span>📝 {exam.totalQuestions} questions</span>
                           <span>⭐ {exam.totalMarks} marks</span>
                         </div>
+                        {isPast && <p className="text-xs text-red-500">The deadline for this test has passed.</p>}
                       </div>
-                      <Button
-                        onClick={() => handleStartScheduled(exam)}
-                        disabled={starting === exam._id}
-                        className="rounded-xl gap-2 flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white"
-                      >
-                        {starting === exam._id
-                          ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting…</>
-                          : <><ChevronRight className="h-4 w-4" /> Start Test</>}
-                      </Button>
+                      {isPast
+                        ? <Button disabled variant="outline" className="rounded-xl gap-2 flex-shrink-0">🔒 Locked</Button>
+                        : <Button
+                            onClick={() => handleStartScheduled(exam)}
+                            disabled={starting === exam._id}
+                            className="rounded-xl gap-2 flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white"
+                          >
+                            {starting === exam._id
+                              ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting…</>
+                              : <><ChevronRight className="h-4 w-4" /> Start Test</>}
+                          </Button>}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>
