@@ -478,8 +478,15 @@ export default function AuthPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="sregBatch">Batch</Label>
-                        <Input id="sregBatch" placeholder="2024-2027" required
-                          value={studentReg.batch} onChange={e => setStudentReg(p => ({ ...p, batch: e.target.value }))} />
+                        <Input id="sregBatch" placeholder="2025 - 2027" required
+                          value={studentReg.batch}
+                          onChange={e => {
+                            let v = e.target.value.replace(/[^0-9\s\-]/g, '');
+                            setStudentReg(p => ({ ...p, batch: v }));
+                          }} />
+                        {studentReg.batch && !/^\d{4}\s*-\s*\d{4}$/.test(studentReg.batch.trim()) && (
+                          <p className="text-[11px] text-red-500">Format: 4 digits - 4 digits (e.g. 2025 - 2027)</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="sregSection">Section</Label>

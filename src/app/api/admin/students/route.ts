@@ -29,11 +29,13 @@ export async function GET(request: NextRequest) {
 
 const ROLL_RE  = /^[A-Z0-9]{15}$/;
 const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@srmist\.edu\.in$/i;
+const BATCH_RE = /^\d{4}\s*-\s*\d{4}$/;
 
-function validateStudent(name: string, roll: string, email: string): string | null {
+function validateStudent(name: string, roll: string, email: string, batch?: string): string | null {
   if (!name || !roll) return 'Name and roll number are required';
   if (!ROLL_RE.test(roll)) return `Registration number must be exactly 15 alphanumeric characters (e.g. RA2531212010001)`;
   if (email && !EMAIL_RE.test(email)) return `Email "${email}" must be a valid @srmist.edu.in address`;
+  if (batch && !BATCH_RE.test(batch)) return `Batch must be in the format 2025 - 2027 (4 digits - 4 digits)`;
   return null;
 }
 
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
         const email = s.email?.toString().trim().toLowerCase() || '';
         const name  = s.name?.toString().trim()  || '';
 
-        const err = validateStudent(name, roll, email);
+        const err = validateStudent(name, roll, email, s.batch?.toString().trim());
         if (err) { results.errors.push(err); continue; }
 
         try {
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
     const email = body.email?.trim().toLowerCase() || '';
     const name  = body.name?.trim()  || '';
 
-    const validErr = validateStudent(name, roll, email);
+    const validErr = validateStudent(name, roll, email, body.batch?.trim());
     if (validErr) return NextResponse.json({ error: validErr }, { status: 400 });
 
     const existing = await User.findOne({ rollNumber: roll });
