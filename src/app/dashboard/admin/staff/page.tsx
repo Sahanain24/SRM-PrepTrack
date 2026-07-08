@@ -18,8 +18,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser } from '@/lib/mock-db';
 import {
-  UserPlus, Search, RefreshCw, Trash2, KeyRound,
-  CheckCircle2, AlertTriangle, UserCog, Power,
+  UserPlus, Search, RefreshCw, Trash2, KeyRound, UserCog,
 } from 'lucide-react';
 
 const ROLES = [
@@ -121,14 +120,6 @@ export default function StaffManagementPage() {
     }
   };
 
-  const callAction = async (id: string, action: string) => {
-    await fetch(`/api/admin/staff/${id}`, {
-      method:  'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action }),
-    });
-  };
-
   const resetPassword = async (s: Staff) => {
     const res  = await fetch(`/api/admin/staff/${s._id}`, {
       method:  'PUT',
@@ -137,14 +128,6 @@ export default function StaffManagementPage() {
     });
     const data = await res.json();
     toast({ title: data.message || `Password reset for ${s.name}` });
-  };
-
-  const toggleActive = async (s: Staff) => {
-    const next = s.isActive ? 'deactivate' : 'activate';
-    if (s.isActive && !confirm(`Deactivate ${s.name}? They will not be able to log in.`)) return;
-    await callAction(s._id, next);
-    toast({ title: `${s.name} ${next}d` });
-    loadStaff();
   };
 
   const deleteStaff = async () => {
@@ -181,8 +164,6 @@ export default function StaffManagementPage() {
 
   const stats = [
     { label: 'Total Staff',  value: staff.length, color: 'text-blue-600' },
-    { label: 'Active',       value: staff.filter(s => s.isActive).length, color: 'text-green-600' },
-    { label: 'Inactive',     value: staff.filter(s => !s.isActive).length, color: 'text-red-600' },
     { label: 'Admins',       value: staff.filter(s => s.role === 'admin').length, color: 'text-indigo-600' },
   ];
 
@@ -257,18 +238,17 @@ export default function StaffManagementPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Department</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-slate-400">Loading staff…</TableCell>
+                    <TableCell colSpan={5} className="text-center py-12 text-slate-400">Loading staff…</TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-slate-400">
+                    <TableCell colSpan={5} className="text-center py-12 text-slate-400">
                       No staff found. Use "Add Staff Member" to register an account.
                     </TableCell>
                   </TableRow>
@@ -288,17 +268,6 @@ export default function StaffManagementPage() {
                       </TableCell>
                       <TableCell className="text-sm text-slate-500">{member.department || '—'}</TableCell>
                       <TableCell>
-                        {member.isActive ? (
-                          <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Active
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-xs text-red-500 font-semibold">
-                            <AlertTriangle className="h-3.5 w-3.5" /> Inactive
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost" size="sm"
@@ -307,14 +276,6 @@ export default function StaffManagementPage() {
                             className="text-slate-400 hover:text-blue-600"
                           >
                             <KeyRound className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="sm"
-                            title={member.isActive ? 'Deactivate' : 'Activate'}
-                            onClick={() => toggleActive(member)}
-                            className={member.isActive ? 'text-slate-400 hover:text-red-600' : 'text-slate-400 hover:text-green-600'}
-                          >
-                            <Power className="h-4 w-4" />
                           </Button>
                           {member.role !== 'admin' && (
                             <Button
