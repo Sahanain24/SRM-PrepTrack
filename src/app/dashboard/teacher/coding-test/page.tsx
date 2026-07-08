@@ -260,15 +260,6 @@ export default function TeacherCodingTestPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Language</Label>
-                  <Select value={aiLanguage} onValueChange={setAiLanguage}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="space-y-1.5">
@@ -364,15 +355,6 @@ export default function TeacherCodingTestPage() {
                               <SelectItem value="easy">Easy</SelectItem>
                               <SelectItem value="medium">Medium</SelectItem>
                               <SelectItem value="hard">Hard</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label>Language</Label>
-                          <Select value={p.language} onValueChange={v => updateProblem(pIdx, { language: v })}>
-                            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {LANGUAGES.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </div>
