@@ -20,7 +20,6 @@ import {
 const PROGRAMS = ['BCA', 'BCA(DS)', 'BCom', 'MSc(ADS)', 'MCom', 'MCA', 'MCA GenAI'];
 const YEARS    = [1, 2, 3, 4];
 const SECTIONS = ['A','B','C','D','E','F','G','H','I','J'];
-const LANGUAGES = ['javascript', 'python', 'java', 'cpp', 'c'];
 
 interface TestCase { input: string; expectedOutput: string; hidden: boolean; }
 interface Problem {
@@ -70,7 +69,6 @@ export default function TeacherCodingTestPage() {
   // AI generation
   const [aiTopic, setAiTopic] = useState('');
   const [aiDifficulty, setAiDifficulty] = useState<'easy'|'medium'|'hard'>('medium');
-  const [aiLanguage, setAiLanguage] = useState('python');
   const [aiNumProblems, setAiNumProblems] = useState(3);
   const [generating, setGenerating] = useState(false);
 
@@ -129,7 +127,7 @@ export default function TeacherCodingTestPage() {
       const res = await fetch('/api/ai/generate-coding-test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: aiTopic.trim(), difficulty: aiDifficulty, language: aiLanguage, numProblems: aiNumProblems }),
+        body: JSON.stringify({ topic: aiTopic.trim(), difficulty: aiDifficulty, language: 'python', numProblems: aiNumProblems }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Generation failed');
       const output = await res.json();
@@ -137,7 +135,7 @@ export default function TeacherCodingTestPage() {
       const generated: Problem[] = output.problems.map(p => ({
         problemId: `p${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         title: p.title, description: p.description, difficulty: p.difficulty,
-        language: aiLanguage, starterCode: p.starterCode, marks: p.marks,
+        language: 'javascript', starterCode: p.starterCode, marks: p.marks,
         testCases: p.testCases.map(tc => ({ input: tc.input, expectedOutput: tc.expectedOutput, hidden: tc.hidden })),
       }));
 
