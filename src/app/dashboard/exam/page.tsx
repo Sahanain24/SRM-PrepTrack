@@ -215,6 +215,7 @@ function SetupScreen({ onStart, onStartScheduled }: {
 
       <Tabs value={tab} onValueChange={v => setTab(v as any)}>
         <TabsList className="bg-slate-100 rounded-xl w-full">
+          <TabsTrigger value="setup" className="flex-1 rounded-lg">🧠 Self Assessment</TabsTrigger>
           <TabsTrigger value="pending" className="flex-1 rounded-lg">
             📋 Scheduled Tests
             {scheduledExams.filter(e => !e.alreadyAttempted).length > 0 && (
@@ -233,6 +234,78 @@ function SetupScreen({ onStart, onStartScheduled }: {
           </TabsTrigger>
           <TabsTrigger value="leaderboard" className="flex-1 rounded-lg">🏆 Leaderboard</TabsTrigger>
         </TabsList>
+
+        {/* ── Self Assessment ───────────────────────────────────────────── */}
+        <TabsContent value="setup" className="mt-4 space-y-4">
+          {loading ? (
+            <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-indigo-500" /></div>
+          ) : courses.length === 0 ? (
+            <Card className="border-dashed border-2 border-slate-200 shadow-none">
+              <CardContent className="flex flex-col items-center justify-center py-14 text-center gap-2">
+                <BookOpen className="h-12 w-12 text-slate-300" />
+                <p className="text-sm text-slate-400">No courses available yet. Ask your teacher to add courses.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-slate-200 shadow-sm">
+              <CardContent className="pt-6 pb-6 space-y-5">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Select Course</Label>
+                  <select
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"
+                    value={selectedCourse?._id || ''}
+                    onChange={e => {
+                      const c = courses.find(c => c._id === e.target.value) || null;
+                      setSelectedCourse(c);
+                      setSelectedSubject(null);
+                    }}
+                  >
+                    <option value="">-- Choose a course --</option>
+                    {courses.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                  </select>
+                </div>
+
+                {selectedCourse && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Select Subject</Label>
+                    <select
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"
+                      value={selectedSubject?.name || ''}
+                      onChange={e => {
+                        const s = selectedCourse.subjects.find(s => s.name === e.target.value) || null;
+                        setSelectedSubject(s);
+                      }}
+                    >
+                      <option value="">-- Choose a subject --</option>
+                      {selectedCourse.subjects.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                {selectedCourse && selectedSubject && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Number of Questions</Label>
+                    <select
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"
+                      value={count}
+                      onChange={e => setCount(Number(e.target.value))}
+                    >
+                      {[5, 10, 15, 20].map(n => <option key={n} value={n}>{n} questions (~{Math.ceil(n * SECONDS_PER_QUESTION / 60)} min)</option>)}
+                    </select>
+                  </div>
+                )}
+
+                <Button
+                  disabled={!canStart}
+                  onClick={() => canStart && onStart(selectedCourse!, selectedSubject!, count)}
+                  className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2"
+                >
+                  <Brain className="h-4 w-4" /> Generate Exam
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
         {/* ── Scheduled Tests (pending) ─────────────────────────────────── */}
         <TabsContent value="pending" className="mt-4 space-y-4">
