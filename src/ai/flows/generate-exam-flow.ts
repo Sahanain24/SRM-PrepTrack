@@ -4,7 +4,7 @@
  * The syllabus text is written by the teacher; AI uses it as the sole source.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, withRetry } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const ExamQuestionSchema = z.object({
@@ -80,7 +80,7 @@ export const generateExamFlow = ai.defineFlow(
       ...input,
       syllabus: input.syllabus?.trim() || `General topics in ${input.subjectName}`,
     };
-    const { output } = await examPrompt(safeInput);
+    const { output } = await withRetry(() => examPrompt(safeInput));
     if (!output) throw new Error('AI failed to generate exam questions');
     output.questions = output.questions.map((q, i) => ({ ...q, id: i + 1 }));
     return output;

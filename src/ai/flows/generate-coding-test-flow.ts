@@ -4,7 +4,7 @@
  * examples and stdin/stdout test cases (incl. hidden ones for grading).
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, withRetry } from '@/ai/genkit';
 import { z } from 'genkit';
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ export const generateCodingTestFlow = ai.defineFlow(
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const { output } = await codingTestPrompt(input);
+        const { output } = await withRetry(() => codingTestPrompt(input));
         if (!output) throw new Error('AI returned empty response');
         return output;
       } catch (err: any) {

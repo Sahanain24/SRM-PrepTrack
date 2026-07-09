@@ -1,6 +1,6 @@
 'use server';
 
-import { ai } from '@/ai/genkit';
+import { ai, withRetry } from '@/ai/genkit';
 import { z } from 'genkit';
 import type { Language } from '@/lib/coding-constants';
 
@@ -69,7 +69,7 @@ export const generateCodingProblemFlow = ai.defineFlow(
     outputSchema: GenerateCodingProblemOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
+    const { output } = await withRetry(() => prompt(input));
     if (!output) throw new Error('Failed to generate coding problem');
     return output;
   }

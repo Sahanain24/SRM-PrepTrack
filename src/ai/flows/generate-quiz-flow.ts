@@ -4,7 +4,7 @@
  * @fileOverview A Genkit flow for generating educational quizzes from topics or study log content.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, withRetry } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const QuizQuestionSchema = z.object({
@@ -53,7 +53,7 @@ export const generateQuizFlow = ai.defineFlow(
     outputSchema: GenerateQuizOutputSchema,
   },
   async (input) => {
-    const { output } = await generateQuizPrompt(input);
+    const { output } = await withRetry(() => generateQuizPrompt(input));
     if (!output) throw new Error('Failed to generate quiz');
     return output;
   }

@@ -8,7 +8,7 @@
  * Step-by-step solutions included for every question.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, withRetry } from '@/ai/genkit';
 import { z } from 'genkit';
 
 // ── Schema ────────────────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ export const generateAptitudeFlow = ai.defineFlow(
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const { output } = await aptitudePrompt(input);
+        const { output } = await withRetry(() => aptitudePrompt(input));
         if (!output) throw new Error('Empty AI response');
         output.questions = output.questions.map((q, i) => ({ ...q, id: i + 1 }));
         return output;
