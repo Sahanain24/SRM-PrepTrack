@@ -91,7 +91,10 @@ export async function POST(request: NextRequest) {
           });
           results.created++;
         } catch (err: any) {
-          results.errors.push(`${roll}: ${err.message}`);
+          const msg = err.code === 11000
+            ? `${roll}: email already registered by another student`
+            : `${roll}: ${err.message}`;
+          results.errors.push(msg);
         }
       }
       return NextResponse.json(results, { status: 201 });
@@ -147,6 +150,15 @@ export async function POST(request: NextRequest) {
     const { password: _pw, ...safe } = student.toObject();
     return NextResponse.json(safe, { status: 201 });
   } catch (error: any) {
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0];
+      const msg = field === 'email'
+        ? `This email is already registered. Each student must have a unique email.`
+        : field === 'rollNumber'
+        ? `This roll number is already registered.`
+        : `Duplicate entry: ${field} already exists.`;
+      return NextResponse.json({ error: msg }, { status: 409 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
