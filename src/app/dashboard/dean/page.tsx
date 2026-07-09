@@ -509,8 +509,8 @@ export default function DeanDashboard() {
               <CardContent>
                 {attemptChartData.length === 0
                   ? <p className="text-slate-400 text-sm text-center py-10">No attempt data yet.</p>
-                  : (
-                    {chartsMounted && <ResponsiveContainer width="100%" height={180}>
+                  : chartsMounted && (
+                    <ResponsiveContainer width="100%" height={180}>
                       <AreaChart data={attemptChartData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
                         <defs>
                           <linearGradient id="avgGrad" x1="0" y1="0" x2="0" y2="1">
@@ -531,7 +531,7 @@ export default function DeanDashboard() {
                           }}
                         />
                       </AreaChart>
-                    </ResponsiveContainer>}
+                    </ResponsiveContainer>
                   )}
               </CardContent>
             </Card>
