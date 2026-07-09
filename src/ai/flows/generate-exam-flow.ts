@@ -76,7 +76,11 @@ export const generateExamFlow = ai.defineFlow(
     outputSchema: GenerateExamOutputSchema,
   },
   async (input) => {
-    const { output } = await examPrompt(input);
+    const safeInput = {
+      ...input,
+      syllabus: input.syllabus?.trim() || `General topics in ${input.subjectName}`,
+    };
+    const { output } = await examPrompt(safeInput);
     if (!output) throw new Error('AI failed to generate exam questions');
     output.questions = output.questions.map((q, i) => ({ ...q, id: i + 1 }));
     return output;

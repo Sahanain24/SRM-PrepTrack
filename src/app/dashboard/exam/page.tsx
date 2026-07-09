@@ -1261,6 +1261,10 @@ export default function ExamPage() {
   const [tabViolations, setTabViolations] = useState(0);
 
   const handleStart = async (course: Course, subject: Subject, count: number) => {
+    if (!subject.syllabus?.trim()) {
+      toast({ title: 'No syllabus found', description: 'This subject has no syllabus content. Ask your teacher to add one.', variant: 'destructive' });
+      return;
+    }
     setConfig({ course, subject, count });
     setScheduledExam(null);
     setPhase('generating');
@@ -1272,9 +1276,13 @@ export default function ExamPage() {
       setExamData(data);
       setPhase('exam');
       signalExamActive(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast({ title: 'Failed to generate exam', variant: 'destructive' });
+      const msg = err?.message || '';
+      const description = msg.includes('429') ? 'AI rate limit reached. Please wait a minute and try again.'
+        : msg.includes('syllabus') ? 'Syllabus content is missing or too short.'
+        : msg || 'Please try again.';
+      toast({ title: 'Failed to generate exam', description, variant: 'destructive' });
       setPhase('setup');
     }
   };
