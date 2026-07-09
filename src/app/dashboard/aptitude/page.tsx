@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser } from '@/lib/mock-db';
-import { generateAptitudeFlow, GenerateAptitudeOutput } from '@/ai/flows/generate-aptitude-flow';
+import type { GenerateAptitudeOutput } from '@/ai/flows/generate-aptitude-flow';
 import {
   Brain, Timer, Target, CheckCircle2, XCircle, ChevronRight, ChevronLeft,
   RotateCcw, Loader2, Lightbulb, Flag, AlertTriangle, TrendingUp,
@@ -736,17 +736,18 @@ export default function AptitudePage() {
     setCount(n);
     setPhase('generating');
     try {
-      const data = await generateAptitudeFlow(
-        topics && topics.length > 0
-          ? { topic: 'Mixed', topics, count: n }
-          : { topic: t, count: n }
-      );
+      const res = await fetch('/api/ai/generate-aptitude', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(topics && topics.length > 0 ? { topic: 'Mixed', topics, count: n } : { topic: t, count: n }),
+      });
+      const data: GenerateAptitudeOutput = await res.json();
+      if (!res.ok) throw new Error((data as any).error || 'Generation failed');
       setExamData(data);
       setPhase('exam');
       signalExamActive(true);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast({ title: 'Failed to generate questions. Please try again.', variant: 'destructive' });
+      toast({ title: 'Failed to generate questions', description: err.message || 'Please try again.', variant: 'destructive' });
       setPhase('setup');
     }
   };

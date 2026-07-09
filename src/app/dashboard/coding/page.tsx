@@ -5,11 +5,9 @@ import { getCurrentUser } from '@/lib/mock-db';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import {
-  generateCodingProblem, GenerateCodingProblemOutput,
-} from '@/ai/flows/generate-coding-problem-flow';
+import type { GenerateCodingProblemOutput } from '@/ai/flows/generate-coding-problem-flow';
 import { LANGUAGES, type Language } from '@/lib/coding-constants';
-import { evaluateCodeFlow, EvaluateCodeOutput } from '@/ai/flows/evaluate-code-flow';
+import type { EvaluateCodeOutput } from '@/ai/flows/evaluate-code-flow';
 import {
   Code2, Sparkles, Loader2, Play, Eye, EyeOff, Lightbulb,
   ChevronRight, RotateCcw, CheckCircle2, XCircle, AlertTriangle,
@@ -212,7 +210,12 @@ export default function CodingLabPage() {
     setShowSolution(false);
     timer.reset();
     try {
-      const data = await generateCodingProblem({ topic: t, difficulty, language });
+      const res = await fetch('/api/ai/generate-coding-problem', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: t, difficulty, language }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
       setProblem(data);
       setCode(data.template);
       setPhase('coding');
@@ -229,15 +232,19 @@ export default function CodingLabPage() {
     setPhase('evaluating');
     timer.stop();
     try {
-      const result = await evaluateCodeFlow({
-        problemTitle:       problem.title,
-        problemDescription: problem.description,
-        constraints:        problem.constraints,
-        examples:           problem.examples,
-        language,
-        code,
-        referenceSolution:  problem.solution,
+      const evalRes = await fetch('/api/ai/evaluate-code', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          problemTitle:       problem.title,
+          problemDescription: problem.description,
+          constraints:        problem.constraints,
+          examples:           problem.examples,
+          language, code,
+          referenceSolution:  problem.solution,
+        }),
       });
+      const result: EvaluateCodeOutput = await evalRes.json();
+      if (!evalRes.ok) throw new Error((result as any).error || 'Evaluation failed');
       setEvaluation(result);
       setPhase('result');
       setShowResult(true);

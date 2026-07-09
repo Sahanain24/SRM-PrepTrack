@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentUser } from '@/lib/mock-db';
-import { generateExamFlow, GenerateExamOutput } from '@/ai/flows/generate-exam-flow';
+import type { GenerateExamOutput } from '@/ai/flows/generate-exam-flow';
 import {
   Trophy, Timer, Target, BookOpen, Brain,
   CheckCircle2, XCircle, ChevronRight, ChevronLeft,
@@ -1269,10 +1269,12 @@ export default function ExamPage() {
     setScheduledExam(null);
     setPhase('generating');
     try {
-      const data = await generateExamFlow({
-        courseName: course.name, subjectName: subject.name,
-        syllabus: subject.syllabus, difficulty: 'medium', count,
+      const res = await fetch('/api/ai/generate-exam', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseName: course.name, subjectName: subject.name, syllabus: subject.syllabus, difficulty: 'medium', count }),
       });
+      const data: GenerateExamOutput = await res.json();
+      if (!res.ok) throw new Error((data as any).error || 'Generation failed');
       setExamData(data);
       setPhase('exam');
       signalExamActive(true);

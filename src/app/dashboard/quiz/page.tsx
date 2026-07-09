@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CheckCircle2, AlertCircle, RotateCcw, BrainCircuit, Loader2, Sparkles, BookOpen } from 'lucide-react';
 import { getDb, saveDb, getCurrentUser, StudyLog } from '@/lib/mock-db';
-import { generateQuiz, GenerateQuizOutput } from '@/ai/flows/generate-quiz-flow';
+import type { GenerateQuizOutput } from '@/ai/flows/generate-quiz-flow';
 
 function QuizContent() {
   const searchParams = useSearchParams();
@@ -68,14 +68,19 @@ function QuizContent() {
 
     setIsGenerating(true);
     try {
-      const data = await generateQuiz(input);
+      const res = await fetch('/api/ai/generate-quiz', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      const data: GenerateQuizOutput = await res.json();
+      if (!res.ok) throw new Error((data as any).error || 'Generation failed');
       setQuizData(data);
       setCurrentStep(0);
       setAnswers([]);
       setIsFinished(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Failed to generate quiz. Please try again.');
+      alert(error.message || 'Failed to generate quiz. Please try again.');
     } finally {
       setIsGenerating(false);
     }
