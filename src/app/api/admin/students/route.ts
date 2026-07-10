@@ -11,7 +11,9 @@ export async function GET(request: NextRequest) {
     const batch      = searchParams.get('batch');
     const department = searchParams.get('department');
 
-    const query: any = { role: 'student', isActive: true };
+    const showInactive = searchParams.get('showInactive') === '1';
+    const query: any = { role: 'student' };
+    if (!showInactive) query.isActive = true;
     if (program)    query.program    = program;
     if (year)       query.year       = parseInt(year);
     if (batch)      query.batch      = batch;
@@ -40,9 +42,16 @@ function validateStudent(name: string, roll: string, email: string, batch?: stri
 }
 
 export async function POST(request: NextRequest) {
+  // Parse body once outside try so catch block can also access it
+  let body: any;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   try {
     await connectDB();
-    const body = await request.json();
 
     // Bulk import — array of students
     if (Array.isArray(body)) {
@@ -152,12 +161,45 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern || {})[0];
-      const msg = field === 'email'
-        ? `This email is already registered. Each student must have a unique email.`
-        : field === 'rollNumber'
-        ? `This roll number is already registered.`
-        : `Duplicate entry: ${field} already exists.`;
-      return NextResponse.json({ error: msg }, { status: 409 });
+      if (field === 'email') {
+        // body is accessible here — look up who owns this email
+        const emailVal = body?.email?.trim().toLowerCase() || '';
+        const owner = emailVal ? await User.findOne({ email: emailVal }) : null;
+
+        if (owner && owner.isActive === false && owner.role === 'student') {
+          // Email belongs to a soft-deleted student — reactivate them
+          const roll2 = body.rollNumber?.toString().toUpperCase().trim() || owner.rollNumber;
+          const reactivated = await User.findByIdAndUpdate(
+            owner._id,
+            {
+              isActive:   true,
+              name:       body.name?.trim()       || owner.name,
+              rollNumber: roll2,
+              email:      emailVal               || owner.email,
+              program:    body.program?.trim()    || owner.program    || '',
+              department: body.department?.trim() || owner.department || '',
+              year:       parseInt(body.year)     || owner.year       || 1,
+              batch:      body.batch?.trim()      || owner.batch      || '',
+              section:    body.section?.trim()    || owner.section    || '',
+              password:   roll2,
+              isFirstLogin:            true,
+              selfAssessmentCompleted: false,
+            },
+            { new: true }
+          ).select('-password');
+          return NextResponse.json(reactivated, { status: 200 });
+        }
+
+        const roleHint = owner ? ` (belongs to a ${owner.role} account)` : '';
+        return NextResponse.json(
+          { error: `This email is already registered${roleHint}. Each student must have a unique email address.` },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json(
+        { error: field === 'rollNumber' ? 'This roll number is already registered.' : `Duplicate entry: ${field} already exists.` },
+        { status: 409 }
+      );
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
