@@ -110,6 +110,13 @@ RULES:
 8. Each explanation must say why the correct answer is right AND why each wrong option is wrong.
 9. Title: generate a short, professional exam title (max 60 characters) that captures the subject and purpose — do NOT copy the teacher's prompt verbatim.
 10. No trivial questions. Every question must require genuine thought.
+11. CRITICAL — correctIndex: This is the 0-based index of the correct answer in the "options" array.
+    - correctIndex 0 → first option (A) is correct
+    - correctIndex 1 → second option (B) is correct
+    - correctIndex 2 → third option (C) is correct
+    - correctIndex 3 → fourth option (D) is correct
+    You MUST verify this matches the option you intend to be correct. Vary correctIndex across questions — do NOT always use 0.
+12. Double-check every question: the explanation's stated correct answer must match the option at correctIndex in the options array.
 
 Generate the total number of questions as specified in each section ({{sections.technical}} + {{sections.aptitude}} + {{sections.reasoning}} + {{sections.verbal}} questions in total).`,
 });
@@ -130,7 +137,12 @@ export const generatePlacementExamFlow = ai.defineFlow(
       try {
         const { output } = await placementPrompt(input);
         if (!output) throw new Error('AI returned empty response');
-        output.questions = output.questions.map((q, i) => ({ ...q, id: i + 1 }));
+        output.questions = output.questions.map((q, i) => ({
+          ...q,
+          id: i + 1,
+          // clamp correctIndex to valid range in case AI goes out of bounds
+          correctIndex: Math.max(0, Math.min(3, q.correctIndex ?? 0)),
+        }));
         return output;
       } catch (err: any) {
         lastError = err;

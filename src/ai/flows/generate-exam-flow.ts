@@ -58,8 +58,9 @@ Rules:
 4. Each question needs a topic tag matching a section in the syllabus.
 5. Each question needs a full explanation: why the correct answer is right, and why each wrong option is incorrect.
 6. Vary question styles: MCQ definitions, scenario-based, fill-in-concept, "which of the following", find-the-error.
-7. Title format: "{{subjectName}} — {{difficulty}} Exam" (e.g. "Data Structures — hard Exam")
-8. If a question contains a code snippet, format it for maximum readability:
+7. CRITICAL — correctIndex: This is the 0-based index of the correct answer in the "options" array (0=A, 1=B, 2=C, 3=D). It MUST point to the option that is actually correct. Vary correctIndex across questions — do NOT always use 0.
+8. Title format: "{{subjectName}} — {{difficulty}} Exam" (e.g. "Data Structures — hard Exam")
+9. If a question contains a code snippet, format it for maximum readability:
    - Use actual newline characters (\n) to separate each line — never write code as a single run-on string.
    - Indent with 4 spaces per level (not tabs).
    - Place the code block on its own line(s), clearly separated from the question text.
@@ -82,7 +83,11 @@ export const generateExamFlow = ai.defineFlow(
     };
     const { output } = await withRetry(() => examPrompt(safeInput));
     if (!output) throw new Error('AI failed to generate exam questions');
-    output.questions = output.questions.map((q, i) => ({ ...q, id: i + 1 }));
+    output.questions = output.questions.map((q, i) => ({
+      ...q,
+      id: i + 1,
+      correctIndex: Math.max(0, Math.min(3, q.correctIndex ?? 0)),
+    }));
     return output;
   }
 );
